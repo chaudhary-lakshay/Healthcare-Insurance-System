@@ -1,0 +1,11 @@
+# Local dev only. Turn on with SPRING_PROFILES_ACTIVE=dev.
+# Just the noisy knobs — verbose logging + SQL echo. Secrets, datasource,
+# flyway, ddl-auto all stay in base application.yml.
+# No prod profile yet; base is already prod-safe.
+spring:
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.lakshay.healthcare: DEBUG
