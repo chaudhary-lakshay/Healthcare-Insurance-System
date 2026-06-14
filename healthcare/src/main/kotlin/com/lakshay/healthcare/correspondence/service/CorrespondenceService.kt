@@ -7,6 +7,7 @@ import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.CoTriggerRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
 import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
+import com.lakshay.healthcare.shared.notification.NotificationService
 import com.lakshay.healthcare.shared.util.EmailUtils
 import com.lowagie.text.Document
 import com.lowagie.text.FontFactory
@@ -27,7 +28,8 @@ class CorrespondenceService(
     private val eligibilityRepository: EligibilityDetailsRepository,
     private val dcCaseRepository: DcCaseRepository,
     private val citizenRepository: CitizenAppRegistrationRepository,
-    private val emailUtils: EmailUtils
+    private val emailUtils: EmailUtils,
+    private val notificationService: NotificationService
 ) {
 
     private val logger = LoggerFactory.getLogger(CorrespondenceService::class.java)
@@ -87,6 +89,15 @@ class CorrespondenceService(
             triggerStatus = "PROCESSED"
         )
         coTriggerRepository.save(updatedTrigger)
+
+        // also drop a copy in the citizen's portal inbox (never throws, never emails)
+        notificationService.notifyPortal(
+            caseNo = trigger.caseNo,
+            recipient = citizen.email,
+            noticeType = "PLAN_DECISION",
+            subject = "Plan decision - Case #${trigger.caseNo}",
+            body = "Your application (case #${trigger.caseNo}) has been processed. See your benefit notice for details."
+        )
 
         logger.info("Successfully processed trigger for case number: {}", trigger.caseNo)
     }
