@@ -33,6 +33,10 @@ class GlobalExceptionHandler {
     fun handleUnauthorized(ex: UnauthorizedException): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.UNAUTHORIZED, ex.message ?: "Unauthorized")
 
+    @ExceptionHandler(ForbiddenException::class)
+    fun handleForbidden(ex: ForbiddenException): ResponseEntity<ErrorResponse> =
+        errorResponse(HttpStatus.FORBIDDEN, ex.message ?: "Forbidden")
+
     @ExceptionHandler(ValidationException::class)
     fun handleValidation(ex: ValidationException): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")

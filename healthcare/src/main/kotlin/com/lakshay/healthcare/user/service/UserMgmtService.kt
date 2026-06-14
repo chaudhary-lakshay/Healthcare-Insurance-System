@@ -31,7 +31,11 @@ class UserMgmtService(
     private val emailUtils: EmailUtils
 ) {
 
-    fun registerUser(request: RegisterRequest): RegistrationResult {
+    fun registerUser(request: RegisterRequest): RegistrationResult = register(request, "USER")
+
+    fun registerCitizen(request: RegisterRequest): RegistrationResult = register(request, "CITIZEN")
+
+    private fun register(request: RegisterRequest, role: String): RegistrationResult {
         if (userRepository.findByEmail(request.email) != null) {
             throw DuplicateResourceException("User with email ${request.email} already exists")
         }
@@ -47,7 +51,7 @@ class UserMgmtService(
             gender = request.gender,
             dob = request.dob?.let { LocalDate.parse(it) },
             activeSw = "N",
-            role = "USER",
+            role = role,
             createdBy = request.name,
             updatedBy = request.name
         )

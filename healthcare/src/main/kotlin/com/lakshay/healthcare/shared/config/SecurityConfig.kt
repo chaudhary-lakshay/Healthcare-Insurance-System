@@ -37,6 +37,7 @@ class SecurityConfig(
                         "/worker-api/save",
                         "/worker-api/activate",
                         "/worker-api/login",
+                        "/citizen-api/register",
                         "/actuator/health",
                         "/actuator/info",
                         "/swagger-ui/**",
