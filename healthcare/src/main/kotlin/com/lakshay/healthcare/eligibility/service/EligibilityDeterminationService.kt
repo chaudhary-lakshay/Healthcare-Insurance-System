@@ -5,6 +5,7 @@ import com.lakshay.healthcare.shared.entity.CoTrigger
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
 import com.lakshay.healthcare.shared.entity.*
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
+import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.lifecycle.CaseStateMachine
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import com.lakshay.healthcare.shared.repository.*
@@ -22,7 +23,8 @@ class EligibilityDeterminationService(
     private val planRepository: PlanRepository,
     private val eligibilityRepository: EligibilityDetailsRepository,
     private val coTriggerRepository: CoTriggerRepository,
-    private val caseStateMachine: CaseStateMachine
+    private val caseStateMachine: CaseStateMachine,
+    private val auditService: AuditService
 ) {
 
     fun determineEligibility(caseNo: Long): EligibilityResponse {
@@ -70,6 +72,7 @@ class EligibilityDeterminationService(
 
         // case went through eligibility -> mark DETERMINED (idempotent on re-run)
         dcCaseRepository.save(caseStateMachine.transition(dcCase, CaseStatus.DETERMINED))
+        auditService.record("CASE_DETERMINED", "DcCase", caseNo.toString(), "planStatus=${output.planStatus}")
 
         return output
     }
