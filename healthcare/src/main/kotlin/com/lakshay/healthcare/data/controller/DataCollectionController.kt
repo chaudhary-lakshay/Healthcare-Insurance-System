@@ -47,6 +47,12 @@ class DataCollectionController(
         return ResponseEntity.ok(mapOf("message" to "Children saved", "childIds" to childIds))
     }
 
+    @PostMapping("/saveHouseholdMember")
+    fun saveHouseholdMember(@RequestBody request: HouseholdMemberRequest): ResponseEntity<Map<String, Any>> {
+        val memberId = dataService.saveHouseholdMember(request)
+        return ResponseEntity.ok(mapOf("message" to "Household member saved", "memberId" to memberId))
+    }
+
     @GetMapping("/summary/{caseNo}")
     fun getDcSummary(@PathVariable caseNo: Long): ResponseEntity<DcSummaryResponse> {
         val summary = dataService.getDcSummary(caseNo)

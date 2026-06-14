@@ -39,5 +39,25 @@ data class DcSummaryResponse(
     val citizenSsn: Long? = null,
     val income: IncomeRequest? = null,
     val education: EducationRequest? = null,
-    val children: List<ChildrenRequest> = emptyList()
+    val children: List<ChildrenRequest> = emptyList(),
+    val householdMembers: List<HouseholdMemberResponse> = emptyList(),
+    // applicant (1) + non-applicant household members. Independent of the legacy children list above.
+    val householdSize: Int = 1
+)
+
+data class HouseholdMemberRequest(
+    val caseNo: Long,
+    val fullName: String? = null,
+    val relationship: String,
+    val dob: String? = null,
+    val memberIncome: Double? = null
+)
+
+data class HouseholdMemberResponse(
+    val memberId: Long,
+    val caseNo: Long,
+    val fullName: String? = null,
+    val relationship: String,
+    val dob: String? = null,
+    val memberIncome: Double? = null
 )

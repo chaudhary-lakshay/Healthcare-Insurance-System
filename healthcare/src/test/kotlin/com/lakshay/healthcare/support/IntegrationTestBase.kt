@@ -79,8 +79,8 @@ abstract class IntegrationTestBase {
         // Order matters only conceptually; FK checks are disabled around the truncate.
         private val DOMAIN_TABLES = listOf(
             "CO_TRIGGERS", "ELIGIBILITY_DETERMINATION", "DC_CHILDREN", "DC_EDUCATION",
-            "DC_INCOME", "DC_CASES", "CITIZEN_APPLICATION", "ISH_GOVERNMENT_REPORTS",
-            "PLAN_MASTER", "PLAN_CATEGORY", "USER_MASTER", "WORKER_MASTER", "ADMIN_MASTER"
+            "DC_INCOME", "HOUSEHOLD_MEMBER", "DC_CASES", "CITIZEN_APPLICATION", "ISH_GOVERNMENT_REPORTS",
+            "PLAN_MASTER", "PLAN_CATEGORY", "USER_MASTER", "WORKER_MASTER", "ADMIN_MASTER", "NOTICE"
         )
     }
 

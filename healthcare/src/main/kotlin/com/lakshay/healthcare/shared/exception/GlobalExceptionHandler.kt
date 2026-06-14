@@ -33,6 +33,10 @@ class GlobalExceptionHandler {
     fun handleUnauthorized(ex: UnauthorizedException): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.UNAUTHORIZED, ex.message ?: "Unauthorized")
 
+    @ExceptionHandler(ValidationException::class)
+    fun handleValidation(ex: ValidationException): ResponseEntity<ErrorResponse> =
+        errorResponse(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
+
     @ExceptionHandler(Exception::class)
     fun handleGeneral(ex: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {
         log.error("Unhandled exception for request {}", request.getDescription(false), ex)

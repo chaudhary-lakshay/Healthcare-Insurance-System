@@ -4,6 +4,8 @@ import com.lakshay.healthcare.data.dto.*
 import com.lakshay.healthcare.shared.entity.*
 import com.lakshay.healthcare.shared.repository.*
 import com.lakshay.healthcare.shared.exception.DuplicateResourceException
+import com.lakshay.healthcare.shared.exception.ValidationException
+import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -15,7 +17,9 @@ class DataCollectionService(
     private val dcEducationRepository: DcEducationRepository,
     private val dcChildrenRepository: DcChildrenRepository,
     private val planRepository: PlanRepository,
-    private val citizenRepository: CitizenAppRegistrationRepository
+    private val citizenRepository: CitizenAppRegistrationRepository,
+    private val householdMemberRepository: HouseholdMemberRepository,
+    private val auditService: AuditService
 ) {
 
     fun loadCaseNo(appId: Long): CaseResponse {
@@ -74,6 +78,25 @@ class DataCollectionService(
         }
     }
 
+    fun saveHouseholdMember(request: HouseholdMemberRequest): Long {
+        dcCaseRepository.findByCaseNo(request.caseNo)
+            ?: throw ResourceNotFoundException("Case not found: ${request.caseNo}")
+        if (request.relationship.isBlank()) throw ValidationException("relationship is required")
+        val dob = request.dob?.let { LocalDate.parse(it) }
+        if (dob != null && dob.isAfter(LocalDate.now())) throw ValidationException("dob cannot be in the future")
+        val saved = householdMemberRepository.save(
+            HouseholdMember(
+                caseNo = request.caseNo,
+                fullName = request.fullName,
+                relationship = request.relationship,
+                dob = dob,
+                memberIncome = request.memberIncome
+            )
+        )
+        auditService.record("HOUSEHOLD_MEMBER_ADDED", "HouseholdMember", saved.memberId.toString(), "relationship=${request.relationship}")
+        return saved.memberId
+    }
+
     fun getDcSummary(caseNo: Long): DcSummaryResponse {
         val dcCase = dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
@@ -81,6 +104,7 @@ class DataCollectionService(
         val income = dcIncomeRepository.findByCaseNo(caseNo)
         val education = dcEducationRepository.findByCaseNo(caseNo)
         val children = dcChildrenRepository.findByCaseNo(caseNo)
+        val householdMembers = householdMemberRepository.findByCaseNo(caseNo)
         val citizen = citizenRepository.findByAppId(dcCase.appId)
         val planName = dcCase.planId?.let { planRepository.findById(it).orElse(null)?.planName }
 
@@ -97,7 +121,11 @@ class DataCollectionService(
             },
             children = children.map {
                 ChildrenRequest(caseNo = it.caseNo, childDOB = it.childDOB?.toString(), childSSN = it.childSSN)
-            }
+            },
+            householdMembers = householdMembers.map {
+                HouseholdMemberResponse(it.memberId, it.caseNo, it.fullName, it.relationship, it.dob?.toString(), it.memberIncome)
+            },
+            householdSize = 1 + householdMembers.size
         )
     }
 }
