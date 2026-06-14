@@ -1,5 +1,6 @@
 ﻿package com.lakshay.healthcare.shared.entity
 
+import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import jakarta.persistence.*
 
 @Entity
@@ -12,5 +13,8 @@ data class DcCase(
     @Column(name = "app_id")
     val appId: Long,
     @Column(name = "plan_id")
-    val planId: Long? = null
+    val planId: Long? = null,
+    @Column(name = "case_status")
+    @Enumerated(EnumType.STRING)
+    val caseStatus: CaseStatus = CaseStatus.SUBMITTED
 )

@@ -5,6 +5,8 @@ import com.lakshay.healthcare.shared.entity.CoTrigger
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
 import com.lakshay.healthcare.shared.entity.*
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
+import com.lakshay.healthcare.shared.lifecycle.CaseStateMachine
+import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import com.lakshay.healthcare.shared.repository.*
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -19,7 +21,8 @@ class EligibilityDeterminationService(
     private val citizenRepository: CitizenAppRegistrationRepository,
     private val planRepository: PlanRepository,
     private val eligibilityRepository: EligibilityDetailsRepository,
-    private val coTriggerRepository: CoTriggerRepository
+    private val coTriggerRepository: CoTriggerRepository,
+    private val caseStateMachine: CaseStateMachine
 ) {
 
     fun determineEligibility(caseNo: Long): EligibilityResponse {
@@ -64,6 +67,9 @@ class EligibilityDeterminationService(
             triggerStatus = "PENDING"
         )
         coTriggerRepository.save(coTrigger)
+
+        // case went through eligibility -> mark DETERMINED (idempotent on re-run)
+        dcCaseRepository.save(caseStateMachine.transition(dcCase, CaseStatus.DETERMINED))
 
         return output
     }
