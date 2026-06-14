@@ -1,6 +1,7 @@
 package com.lakshay.healthcare.citizen.controller
 
 import com.lakshay.healthcare.citizen.dto.CaseStatusResponse
+import com.lakshay.healthcare.citizen.dto.NoticeResponse
 import com.lakshay.healthcare.citizen.service.CitizenPortalService
 import com.lakshay.healthcare.user.dto.RegisterRequest
 import com.lakshay.healthcare.user.service.UserMgmtService
@@ -27,4 +28,8 @@ class CitizenPortalController(
     @GetMapping("/cases/{caseNo}/status")
     fun myCaseStatus(@PathVariable caseNo: Long): ResponseEntity<CaseStatusResponse> =
         ResponseEntity.ok(citizenPortalService.getMyCaseStatus(caseNo))
+
+    @GetMapping("/notices")
+    fun myNotices(): ResponseEntity<List<NoticeResponse>> =
+        ResponseEntity.ok(citizenPortalService.getMyNotices())
 }

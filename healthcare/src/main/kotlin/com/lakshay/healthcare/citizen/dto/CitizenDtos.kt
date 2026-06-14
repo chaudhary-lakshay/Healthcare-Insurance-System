@@ -11,3 +11,12 @@ data class CaseStatusResponse(
     val planStartDate: String? = null,
     val planEndDate: String? = null
 )
+
+data class NoticeResponse(
+    val noticeId: Long,
+    val noticeType: String,
+    val subject: String? = null,
+    val body: String? = null,
+    val status: String,
+    val createdAt: String
+)

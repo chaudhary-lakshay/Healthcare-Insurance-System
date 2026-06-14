@@ -25,6 +25,7 @@ class CitizenPortalIT : IntegrationTestBase() {
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
     @Autowired private lateinit var eligibilityRepo: EligibilityDetailsRepository
+    @Autowired private lateinit var noticeRepo: com.lakshay.healthcare.shared.repository.NoticeRepository
 
     private fun seedCaseFor(email: String): Long {
         val app = citizenRepo.save(
@@ -117,5 +118,22 @@ class CitizenPortalIT : IntegrationTestBase() {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.role").value("ROLE_CITIZEN"))
+    }
+
+    @Test
+    fun `CITIZEN sees only own notices`() {
+        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(recipient = "me@ish.test", channel = "PORTAL", noticeType = "PLAN_DECISION", subject = "yours", body = "b"))
+        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(recipient = "other@ish.test", channel = "PORTAL", noticeType = "PLAN_DECISION", subject = "theirs", body = "b"))
+        mockMvc.perform(
+            get("/citizen-api/notices").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "me@ish.test"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].subject").value("yours"))
+    }
+
+    @Test
+    fun `notices need a token`() {
+        mockMvc.perform(get("/citizen-api/notices")).andExpect(status().isUnauthorized)
     }
 }
