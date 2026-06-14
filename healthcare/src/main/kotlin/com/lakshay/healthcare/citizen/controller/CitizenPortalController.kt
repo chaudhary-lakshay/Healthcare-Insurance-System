@@ -1,6 +1,8 @@
 package com.lakshay.healthcare.citizen.controller
 
+import com.lakshay.healthcare.citizen.dto.ApplyResponse
 import com.lakshay.healthcare.citizen.dto.CaseStatusResponse
+import com.lakshay.healthcare.citizen.dto.CitizenApplyRequest
 import com.lakshay.healthcare.citizen.dto.NoticeResponse
 import com.lakshay.healthcare.citizen.service.CitizenPortalService
 import com.lakshay.healthcare.user.dto.RegisterRequest
@@ -32,4 +34,8 @@ class CitizenPortalController(
     @GetMapping("/notices")
     fun myNotices(): ResponseEntity<List<NoticeResponse>> =
         ResponseEntity.ok(citizenPortalService.getMyNotices())
+
+    @PostMapping("/applications")
+    fun apply(@RequestBody request: CitizenApplyRequest): ResponseEntity<ApplyResponse> =
+        ResponseEntity.ok(citizenPortalService.apply(request))
 }

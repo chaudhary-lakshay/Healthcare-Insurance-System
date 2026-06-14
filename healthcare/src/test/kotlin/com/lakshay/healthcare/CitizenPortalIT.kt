@@ -136,4 +136,49 @@ class CitizenPortalIT : IntegrationTestBase() {
     fun `notices need a token`() {
         mockMvc.perform(get("/citizen-api/notices")).andExpect(status().isUnauthorized)
     }
+
+    @Test
+    fun `CITIZEN applies and the application uses the JWT email`() {
+        val result = mockMvc.perform(
+            post("/citizen-api/applications")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "applicant@ish.test"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "Jane Doe", gender = "F", ssn = 123456704L, attested = true)))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.stateName").value("California"))
+            .andExpect(jsonPath("$.caseStatus").value("SUBMITTED"))
+            .andReturn()
+        val appId = objectMapper.readTree(result.response.contentAsString).get("appId").asLong()
+        assertThat(citizenRepo.findByAppId(appId)!!.email).isEqualTo("applicant@ish.test")
+    }
+
+    @Test
+    fun `apply without attestation is 400`() {
+        mockMvc.perform(
+            post("/citizen-api/applications")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "a@ish.test"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123456704L, attested = false)))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `apply with an invalid ssn is 400`() {
+        mockMvc.perform(
+            post("/citizen-api/applications")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "a@ish.test"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123L, attested = true)))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `apply needs a token`() {
+        mockMvc.perform(
+            post("/citizen-api/applications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123456704L, attested = true)))
+        ).andExpect(status().isUnauthorized)
+    }
 }

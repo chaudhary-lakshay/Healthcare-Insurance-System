@@ -20,3 +20,19 @@ data class NoticeResponse(
     val status: String,
     val createdAt: String
 )
+
+data class CitizenApplyRequest(
+    val fullName: String,
+    val gender: String,
+    val ssn: Long,
+    val phoneNo: Long? = null,
+    val dob: String? = null,
+    val attested: Boolean = false
+)
+
+data class ApplyResponse(
+    val appId: Long,
+    val caseNo: Long,
+    val stateName: String,
+    val caseStatus: String
+)
