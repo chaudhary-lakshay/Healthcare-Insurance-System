@@ -1,6 +1,8 @@
 ﻿package com.lakshay.healthcare.eligibility.service
 
 import com.lakshay.healthcare.eligibility.dto.EligibilityResponse
+import com.lakshay.healthcare.eligibility.dto.ProgramResult
+import com.lakshay.healthcare.eligibility.dto.ScreeningResponse
 import com.lakshay.healthcare.shared.entity.CoTrigger
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
 import com.lakshay.healthcare.shared.entity.*
@@ -9,6 +11,7 @@ import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.lifecycle.CaseStateMachine
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import com.lakshay.healthcare.shared.repository.*
+import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.Period
@@ -25,7 +28,8 @@ class EligibilityDeterminationService(
     private val coTriggerRepository: CoTriggerRepository,
     private val caseStateMachine: CaseStateMachine,
     private val auditService: AuditService,
-    private val planRuleRepository: PlanRuleRepository
+    private val planRuleRepository: PlanRuleRepository,
+    private val ownershipService: OwnershipService
 ) {
 
     fun determineEligibility(caseNo: Long): EligibilityResponse {
@@ -88,6 +92,31 @@ class EligibilityDeterminationService(
         auditService.record("CASE_DETERMINED", "DcCase", caseNo.toString(), "planStatus=${output.planStatus}")
 
         return output
+    }
+
+    // Advisory multi-program screening: which active plans this applicant would qualify for given the
+    // data already collected. Read-only - never persists or changes the case's official determination.
+    // Ownership-checked (a citizen screens only their own case). Requires income data, same precondition
+    // as determineEligibility -> 404 if absent.
+    fun screen(caseNo: Long): ScreeningResponse {
+        ownershipService.assertCanAccessCase(caseNo)
+        val dcCase = dcCaseRepository.findByCaseNo(caseNo)
+            ?: throw ResourceNotFoundException("Case not found: $caseNo")
+        val income = dcIncomeRepository.findByCaseNo(caseNo)
+            ?: throw ResourceNotFoundException("Income data not found for case: $caseNo")
+        val education = dcEducationRepository.findByCaseNo(caseNo)
+        val children = dcChildrenRepository.findByCaseNo(caseNo)
+        val citizen = citizenRepository.findByAppId(dcCase.appId)
+        val citizenAge = citizen?.dob?.let { Period.between(it, LocalDate.now()).years } ?: 0
+
+        val programs = planRepository.findAll()
+            .filter { it.activeSw == "Y" }
+            .map { plan ->
+                val r = applyPlanConditions(plan.planName, income, education, children, citizenAge)
+                ProgramResult(plan.planName, r.planStatus, r.benefitAmt, r.denialReason)
+            }
+        auditService.record("CASE_SCREENED", "DcCase", caseNo.toString())
+        return ScreeningResponse(caseNo, programs)
     }
 
     private fun applyPlanConditions(

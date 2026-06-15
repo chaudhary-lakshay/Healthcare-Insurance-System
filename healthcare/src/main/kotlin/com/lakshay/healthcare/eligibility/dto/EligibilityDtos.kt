@@ -13,3 +13,16 @@ data class EligibilityResponse(
     @JsonFormat(pattern = "yyyy-MM-dd")
     val planEndDate: LocalDate? = null
 )
+
+// Advisory multi-program screening result. Whitelisted fields only — no SSN/PII.
+data class ScreeningResponse(
+    val caseNo: Long,
+    val programs: List<ProgramResult>
+)
+
+data class ProgramResult(
+    val planName: String,
+    val planStatus: String?,
+    val benefitAmt: Double? = null,
+    val denialReason: String? = null
+)
