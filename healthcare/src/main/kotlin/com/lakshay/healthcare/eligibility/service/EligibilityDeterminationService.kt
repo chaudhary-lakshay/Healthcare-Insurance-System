@@ -29,7 +29,8 @@ class EligibilityDeterminationService(
     private val caseStateMachine: CaseStateMachine,
     private val auditService: AuditService,
     private val planRuleRepository: PlanRuleRepository,
-    private val ownershipService: OwnershipService
+    private val ownershipService: OwnershipService,
+    private val householdMemberRepository: HouseholdMemberRepository
 ) {
 
     fun determineEligibility(caseNo: Long): EligibilityResponse {
@@ -54,7 +55,8 @@ class EligibilityDeterminationService(
         val citizenName = citizen?.fullName ?: "Unknown"
         val citizenSSN = citizen?.ssn
 
-        val output = applyPlanConditions(planName, income, education, children, citizenAge)
+        val householdIncome = householdMemberRepository.findByCaseNo(caseNo).sumOf { it.memberIncome ?: 0.0 }
+        val output = applyPlanConditions(planName, income, education, children, citizenAge, householdIncome)
 
         // Idempotent: re-running determination updates the case's existing rows instead of
         // duplicating them. The copy keeps ed_trace_id and the batch-written bank/account fields.
@@ -89,7 +91,10 @@ class EligibilityDeterminationService(
 
         // case went through eligibility -> mark DETERMINED (idempotent on re-run)
         dcCaseRepository.save(caseStateMachine.transition(dcCase, CaseStatus.DETERMINED))
-        auditService.record("CASE_DETERMINED", "DcCase", caseNo.toString(), "planStatus=${output.planStatus}")
+        auditService.record(
+            "CASE_DETERMINED", "DcCase", caseNo.toString(),
+            "planStatus=${output.planStatus}; applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
+        )
 
         return output
     }
@@ -108,11 +113,12 @@ class EligibilityDeterminationService(
         val children = dcChildrenRepository.findByCaseNo(caseNo)
         val citizen = citizenRepository.findByAppId(dcCase.appId)
         val citizenAge = citizen?.dob?.let { Period.between(it, LocalDate.now()).years } ?: 0
+        val householdIncome = householdMemberRepository.findByCaseNo(caseNo).sumOf { it.memberIncome ?: 0.0 }
 
         val programs = planRepository.findAll()
             .filter { it.activeSw == "Y" }
             .map { plan ->
-                val r = applyPlanConditions(plan.planName, income, education, children, citizenAge)
+                val r = applyPlanConditions(plan.planName, income, education, children, citizenAge, householdIncome)
                 ProgramResult(plan.planName, r.planStatus, r.benefitAmt, r.denialReason)
             }
         auditService.record("CASE_SCREENED", "DcCase", caseNo.toString())
@@ -124,9 +130,12 @@ class EligibilityDeterminationService(
         income: DcIncome,
         education: DcEducation?,
         children: List<DcChildren>,
-        citizenAge: Int
+        citizenAge: Int,
+        householdIncome: Double
     ): EligibilityResponse {
-        val empIncome = income.empIncome ?: 0.0
+        val applicantIncome = income.empIncome ?: 0.0
+        // Income-limit rules count the whole household; CAJW (below) uses applicant income only.
+        val empIncome = applicantIncome + householdIncome
         val propertyIncome = income.propertyIncome ?: 0.0
         // Thresholds/amounts come from PLAN_RULE when configured, else the legacy literal (per field).
         val rule = planRuleRepository.findByPlanName(planName)
@@ -214,7 +223,7 @@ class EligibilityDeterminationService(
             }
             "CAJW" -> {
                 val passOutYear = education?.passOutYear
-                if (empIncome == 0.0 && passOutYear != null && passOutYear <= LocalDate.now().year) {
+                if (applicantIncome == 0.0 && passOutYear != null && passOutYear <= LocalDate.now().year) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,

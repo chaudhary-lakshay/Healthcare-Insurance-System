@@ -52,6 +52,7 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     @Autowired private lateinit var eligibilityRepository: EligibilityDetailsRepository
     @Autowired private lateinit var coTriggerRepository: CoTriggerRepository
     @Autowired private lateinit var planRuleRepository: com.lakshay.healthcare.shared.repository.PlanRuleRepository
+    @Autowired private lateinit var householdMemberRepository: com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
 
     /** The else-branch of the rule engine needs a plan whose name is not one of the six keywords. */
     @BeforeEach
@@ -233,6 +234,19 @@ class EligibilityMatrixIT : IntegrationTestBase() {
         eligibilityService.determineEligibility(caseNo)
         assertThat(eligibilityRepository.findAll().count { it.caseNo == caseNo }).isEqualTo(1)
         assertThat(coTriggerRepository.findAll().count { it.caseNo == caseNo }).isEqualTo(1)
+    }
+
+    @Test
+    fun `ELIG-MATRIX household member income counts toward the income limit`() {
+        // Applicant alone (250 < 300) would be approved for SNAP; a household member's income pushes
+        // the household total to 350, over the limit -> denied.
+        val caseNo = seedCase(planName = "SNAP", empIncome = 250.0)
+        householdMemberRepository.save(
+            com.lakshay.healthcare.shared.entity.HouseholdMember(caseNo = caseNo, relationship = "SPOUSE", memberIncome = 100.0)
+        )
+        val result = eligibilityService.determineEligibility(caseNo)
+        assertThat(result.planStatus).isEqualTo("DENIED")
+        assertThat(result.denialReason).isEqualTo("High Income")
     }
 
     /** One parameterized matrix case. */
