@@ -2,6 +2,9 @@ package com.lakshay.healthcare.casework.controller
 
 import com.lakshay.healthcare.casework.dto.AssignmentRequest
 import com.lakshay.healthcare.casework.dto.AssignmentResponse
+import com.lakshay.healthcare.casework.dto.DocumentReviewRequest
+import com.lakshay.healthcare.casework.dto.DocumentReviewResponse
+import com.lakshay.healthcare.casework.dto.DocumentSummaryResponse
 import com.lakshay.healthcare.casework.dto.CaseNoteRequest
 import com.lakshay.healthcare.casework.dto.CaseNoteResponse
 import com.lakshay.healthcare.casework.dto.QueueItemResponse
@@ -41,4 +44,12 @@ class CaseworkController(
     @PostMapping("/cases/{caseNo}/rfi")
     fun requestInfo(@PathVariable caseNo: Long, @RequestBody request: RfiRequest): ResponseEntity<RfiResponse> =
         ResponseEntity.ok(caseworkService.requestInfo(caseNo, request))
+
+    @GetMapping("/cases/{caseNo}/documents")
+    fun listDocuments(@PathVariable caseNo: Long): ResponseEntity<List<DocumentSummaryResponse>> =
+        ResponseEntity.ok(caseworkService.listDocuments(caseNo))
+
+    @PostMapping("/documents/{docId}/review")
+    fun review(@PathVariable docId: Long, @RequestBody request: DocumentReviewRequest): ResponseEntity<DocumentReviewResponse> =
+        ResponseEntity.ok(caseworkService.reviewDocument(docId, request))
 }

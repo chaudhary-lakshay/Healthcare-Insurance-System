@@ -1,6 +1,9 @@
 package com.lakshay.healthcare.casework.service
 
 import com.lakshay.healthcare.casework.dto.AssignmentRequest
+import com.lakshay.healthcare.casework.dto.DocumentReviewRequest
+import com.lakshay.healthcare.casework.dto.DocumentReviewResponse
+import com.lakshay.healthcare.casework.dto.DocumentSummaryResponse
 import com.lakshay.healthcare.casework.dto.AssignmentResponse
 import com.lakshay.healthcare.casework.dto.CaseNoteRequest
 import com.lakshay.healthcare.casework.dto.CaseNoteResponse
@@ -19,10 +22,12 @@ import com.lakshay.healthcare.shared.repository.CaseAssignmentRepository
 import com.lakshay.healthcare.shared.repository.CaseNoteRepository
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
+import com.lakshay.healthcare.shared.repository.DocumentRepository
 import com.lakshay.healthcare.shared.repository.WorkerMasterRepository
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
@@ -33,6 +38,7 @@ class CaseworkService(
     private val caseAssignmentRepository: CaseAssignmentRepository,
     private val workerRepository: WorkerMasterRepository,
     private val notificationService: NotificationService,
+    private val documentRepository: DocumentRepository,
     private val auditService: AuditService
 ) {
 
@@ -56,6 +62,21 @@ class CaseworkService(
         caseNoteRepository.save(CaseNote(caseNo = caseNo, author = author, body = "RFI: ${request.message}"))
         auditService.record("RFI_SENT", "DcCase", caseNo.toString())
         return RfiResponse(caseNo = caseNo, notificationSent = notice != null)
+    }
+
+    fun listDocuments(caseNo: Long): List<DocumentSummaryResponse> =
+        documentRepository.findByCaseNo(caseNo).map {
+            DocumentSummaryResponse(it.docId, it.docType, it.fileName, it.contentType, it.status, it.createdAt.toString())
+        }
+
+    @Transactional
+    fun reviewDocument(docId: Long, request: DocumentReviewRequest): DocumentReviewResponse {
+        val decision = request.decision.uppercase()
+        if (decision !in setOf("REVIEWED", "REJECTED")) throw ValidationException("decision must be REVIEWED or REJECTED")
+        if (!documentRepository.existsById(docId)) throw ResourceNotFoundException("Document not found: $docId")
+        documentRepository.updateStatus(docId, decision)
+        auditService.record("DOCUMENT_REVIEWED", "Document", docId.toString(), "decision=$decision")
+        return DocumentReviewResponse(docId, decision)
     }
 
     fun assign(caseNo: Long, request: AssignmentRequest): AssignmentResponse {

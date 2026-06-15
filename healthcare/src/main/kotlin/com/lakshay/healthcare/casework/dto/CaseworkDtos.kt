@@ -36,3 +36,21 @@ data class RfiResponse(
     val caseNo: Long,
     val notificationSent: Boolean
 )
+
+data class DocumentSummaryResponse(
+    val docId: Long,
+    val docType: String,
+    val fileName: String? = null,
+    val contentType: String? = null,
+    val status: String,
+    val createdAt: String
+)
+
+data class DocumentReviewRequest(
+    val decision: String
+)
+
+data class DocumentReviewResponse(
+    val docId: Long,
+    val status: String
+)

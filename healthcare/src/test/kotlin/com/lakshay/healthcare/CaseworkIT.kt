@@ -22,6 +22,7 @@ class CaseworkIT : IntegrationTestBase() {
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
     @Autowired private lateinit var noticeRepo: com.lakshay.healthcare.shared.repository.NoticeRepository
+    @Autowired private lateinit var documentRepo: com.lakshay.healthcare.shared.repository.DocumentRepository
 
     private fun seedCase(name: String = "Jane Doe"): Long {
         val app = citizenRepo.save(
@@ -167,6 +168,44 @@ class CaseworkIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
                 .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("hello")))
+        ).andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `staff lists and reviews a case document`() {
+        val caseNo = seedCase()
+        val docId = documentRepo.save(
+            com.lakshay.healthcare.shared.entity.Document(caseNo = caseNo, uploadedBy = "c@ish.test", docType = "ID", contentType = "application/pdf", content = byteArrayOf(1, 2, 3))
+        ).docId
+
+        mockMvc.perform(get("/casework-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, adminAuth()))
+            .andExpect(status().isOk).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].status").value("UPLOADED"))
+
+        mockMvc.perform(
+            post("/casework-api/documents/$docId/review").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("REVIEWED")))
+        ).andExpect(status().isOk).andExpect(jsonPath("$.status").value("REVIEWED"))
+
+        assertThat(documentRepo.findById(docId).get().status).isEqualTo("REVIEWED")
+    }
+
+    @Test
+    fun `review with a bad decision is 400`() {
+        val caseNo = seedCase()
+        val docId = documentRepo.save(
+            com.lakshay.healthcare.shared.entity.Document(caseNo = caseNo, uploadedBy = "x", docType = "ID", content = byteArrayOf(1))
+        ).docId
+        mockMvc.perform(
+            post("/casework-api/documents/$docId/review").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("MAYBE")))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `reviewing an unknown document is 404`() {
+        mockMvc.perform(
+            post("/casework-api/documents/999999/review").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("REVIEWED")))
         ).andExpect(status().isNotFound)
     }
 }
