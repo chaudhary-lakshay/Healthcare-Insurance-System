@@ -5,6 +5,8 @@ import com.lakshay.healthcare.casework.dto.AssignmentResponse
 import com.lakshay.healthcare.casework.dto.CaseNoteRequest
 import com.lakshay.healthcare.casework.dto.CaseNoteResponse
 import com.lakshay.healthcare.casework.dto.QueueItemResponse
+import com.lakshay.healthcare.casework.dto.RfiRequest
+import com.lakshay.healthcare.casework.dto.RfiResponse
 import com.lakshay.healthcare.casework.service.CaseworkService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -35,4 +37,8 @@ class CaseworkController(
     @GetMapping("/cases/{caseNo}/assignment")
     fun getAssignment(@PathVariable caseNo: Long): ResponseEntity<AssignmentResponse> =
         ResponseEntity.ok(caseworkService.getAssignment(caseNo))
+
+    @PostMapping("/cases/{caseNo}/rfi")
+    fun requestInfo(@PathVariable caseNo: Long, @RequestBody request: RfiRequest): ResponseEntity<RfiResponse> =
+        ResponseEntity.ok(caseworkService.requestInfo(caseNo, request))
 }

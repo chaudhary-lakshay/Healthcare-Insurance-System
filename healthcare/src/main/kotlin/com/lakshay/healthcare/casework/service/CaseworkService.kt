@@ -5,6 +5,8 @@ import com.lakshay.healthcare.casework.dto.AssignmentResponse
 import com.lakshay.healthcare.casework.dto.CaseNoteRequest
 import com.lakshay.healthcare.casework.dto.CaseNoteResponse
 import com.lakshay.healthcare.casework.dto.QueueItemResponse
+import com.lakshay.healthcare.casework.dto.RfiRequest
+import com.lakshay.healthcare.casework.dto.RfiResponse
 import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.entity.CaseAssignment
 import com.lakshay.healthcare.shared.entity.CaseNote
@@ -12,6 +14,7 @@ import com.lakshay.healthcare.shared.exception.DuplicateResourceException
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.exception.ValidationException
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
+import com.lakshay.healthcare.shared.notification.NotificationService
 import com.lakshay.healthcare.shared.repository.CaseAssignmentRepository
 import com.lakshay.healthcare.shared.repository.CaseNoteRepository
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
@@ -29,8 +32,31 @@ class CaseworkService(
     private val citizenRepository: CitizenAppRegistrationRepository,
     private val caseAssignmentRepository: CaseAssignmentRepository,
     private val workerRepository: WorkerMasterRepository,
+    private val notificationService: NotificationService,
     private val auditService: AuditService
 ) {
+
+    private val ssnPattern = Regex("""\d{3}-?\d{2}-?\d{4}""")
+
+    // Worker requests info from the citizen. The recipient is derived from the case (never a request
+    // param), the message is rejected if it contains an SSN, and notificationSent reports whether the
+    // portal notice actually went out (notifyPortal swallows its own failures).
+    fun requestInfo(caseNo: Long, request: RfiRequest): RfiResponse {
+        val case = dcCaseRepository.findByCaseNo(caseNo)
+            ?: throw ResourceNotFoundException("Case not found: $caseNo")
+        if (request.message.isBlank()) throw ValidationException("message is required")
+        if (ssnPattern.containsMatchIn(request.message)) throw ValidationException("message must not contain an SSN")
+        val citizenEmail = citizenRepository.findByAppId(case.appId)?.email
+            ?: throw ResourceNotFoundException("No citizen on file for case: $caseNo")
+        val author = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
+        val notice = notificationService.notifyPortal(
+            caseNo = caseNo, recipient = citizenEmail, noticeType = "RFI",
+            subject = "Information requested - Case #$caseNo", body = request.message
+        )
+        caseNoteRepository.save(CaseNote(caseNo = caseNo, author = author, body = "RFI: ${request.message}"))
+        auditService.record("RFI_SENT", "DcCase", caseNo.toString())
+        return RfiResponse(caseNo = caseNo, notificationSent = notice != null)
+    }
 
     fun assign(caseNo: Long, request: AssignmentRequest): AssignmentResponse {
         dcCaseRepository.findByCaseNo(caseNo)

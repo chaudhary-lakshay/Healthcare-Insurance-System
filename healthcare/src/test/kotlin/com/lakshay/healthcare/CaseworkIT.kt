@@ -6,6 +6,7 @@ import com.lakshay.healthcare.shared.entity.DcCase
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
 import com.lakshay.healthcare.support.IntegrationTestBase
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
@@ -20,6 +21,7 @@ class CaseworkIT : IntegrationTestBase() {
 
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
+    @Autowired private lateinit var noticeRepo: com.lakshay.healthcare.shared.repository.NoticeRepository
 
     private fun seedCase(name: String = "Jane Doe"): Long {
         val app = citizenRepo.save(
@@ -137,5 +139,34 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         mockMvc.perform(get("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth()))
             .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `RFI notifies the citizen and reports it sent`() {
+        val caseNo = seedCase()
+        mockMvc.perform(
+            post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("please upload proof of income")))
+        ).andExpect(status().isOk).andExpect(jsonPath("$.notificationSent").value(true))
+
+        assertThat(noticeRepo.findByRecipientOrderByCreatedAtDesc("c@ish.test").any { it.noticeType == "RFI" }).isTrue
+    }
+
+    @Test
+    fun `RFI with an SSN in the message is 400`() {
+        val caseNo = seedCase()
+        mockMvc.perform(
+            post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("confirm ssn 123-45-6789")))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `RFI on a case with no citizen on file is 404`() {
+        val caseNo = dcCaseRepo.save(com.lakshay.healthcare.shared.entity.DcCase(appId = 99999L)).caseNo
+        mockMvc.perform(
+            post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("hello")))
+        ).andExpect(status().isNotFound)
     }
 }

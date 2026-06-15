@@ -27,3 +27,12 @@ data class AssignmentResponse(
     val assignedBy: String? = null,
     val assignedAt: String
 )
+
+data class RfiRequest(
+    val message: String
+)
+
+data class RfiResponse(
+    val caseNo: Long,
+    val notificationSent: Boolean
+)
