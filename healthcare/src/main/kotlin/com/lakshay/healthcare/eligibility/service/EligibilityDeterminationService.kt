@@ -24,7 +24,8 @@ class EligibilityDeterminationService(
     private val eligibilityRepository: EligibilityDetailsRepository,
     private val coTriggerRepository: CoTriggerRepository,
     private val caseStateMachine: CaseStateMachine,
-    private val auditService: AuditService
+    private val auditService: AuditService,
+    private val planRuleRepository: PlanRuleRepository
 ) {
 
     fun determineEligibility(caseNo: Long): EligibilityResponse {
@@ -86,14 +87,16 @@ class EligibilityDeterminationService(
     ): EligibilityResponse {
         val empIncome = income.empIncome ?: 0.0
         val propertyIncome = income.propertyIncome ?: 0.0
+        // Thresholds/amounts come from PLAN_RULE when configured, else the legacy literal (per field).
+        val rule = planRuleRepository.findByPlanName(planName)
 
         return when (planName.uppercase()) {
             "SNAP" -> {
-                if (empIncome < 300) {
+                if (empIncome < (rule?.incomeLimit ?: 300.0)) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
-                        benefitAmt = 200.0,
+                        benefitAmt = rule?.benefitAmt ?: 200.0,
                         denialReason = null,
                         planStartDate = LocalDate.now(),
                         planEndDate = LocalDate.now().plusYears(2)
@@ -112,11 +115,11 @@ class EligibilityDeterminationService(
                 val allKidsUnderLimit = children.all { child ->
                     child.childDOB?.let { Period.between(it, LocalDate.now()).years <= 16 } ?: true
                 }
-                if (empIncome < 300 && hasEligibleKids && allKidsUnderLimit) {
+                if (empIncome < (rule?.incomeLimit ?: 300.0) && hasEligibleKids && allKidsUnderLimit) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
-                        benefitAmt = 300.0,
+                        benefitAmt = rule?.benefitAmt ?: 300.0,
                         denialReason = null,
                         planStartDate = LocalDate.now(),
                         planEndDate = LocalDate.now().plusYears(2)
@@ -135,7 +138,7 @@ class EligibilityDeterminationService(
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
-                        benefitAmt = 350.0,
+                        benefitAmt = rule?.benefitAmt ?: 350.0,
                         denialReason = null,
                         planStartDate = LocalDate.now(),
                         planEndDate = LocalDate.now().plusYears(2)
@@ -150,11 +153,11 @@ class EligibilityDeterminationService(
                 }
             }
             "MEDAID" -> {
-                if (empIncome < 300 && propertyIncome == 0.0) {
+                if (empIncome < (rule?.incomeLimit ?: 300.0) && propertyIncome == 0.0) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
-                        benefitAmt = 200.0,
+                        benefitAmt = rule?.benefitAmt ?: 200.0,
                         denialReason = null,
                         planStartDate = LocalDate.now(),
                         planEndDate = LocalDate.now().plusYears(2)
@@ -174,7 +177,7 @@ class EligibilityDeterminationService(
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
-                        benefitAmt = 300.0,
+                        benefitAmt = rule?.benefitAmt ?: 300.0,
                         denialReason = null,
                         planStartDate = LocalDate.now(),
                         planEndDate = LocalDate.now().plusYears(2)

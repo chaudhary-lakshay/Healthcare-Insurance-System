@@ -51,6 +51,7 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     @Autowired private lateinit var dcChildrenRepo: DcChildrenRepository
     @Autowired private lateinit var eligibilityRepository: EligibilityDetailsRepository
     @Autowired private lateinit var coTriggerRepository: CoTriggerRepository
+    @Autowired private lateinit var planRuleRepository: com.lakshay.healthcare.shared.repository.PlanRuleRepository
 
     /** The else-branch of the rule engine needs a plan whose name is not one of the six keywords. */
     @BeforeEach
@@ -210,6 +211,19 @@ class EligibilityMatrixIT : IntegrationTestBase() {
             eligibilityService.determineEligibility(caseNo)
         }
         assertThat(ex.message).contains("Income data not found")
+    }
+
+    @Test
+    fun `ELIG-MATRIX falls back to the legacy amount when the configured benefit is null`() {
+        val snapRule = planRuleRepository.findByPlanName("SNAP")!!
+        planRuleRepository.save(snapRule.copy(benefitAmt = null))
+        try {
+            val caseNo = seedCase(planName = "SNAP", empIncome = 100.0)
+            val result = eligibilityService.determineEligibility(caseNo)
+            assertThat(result.benefitAmt).isEqualTo(200.0)
+        } finally {
+            planRuleRepository.save(snapRule)
+        }
     }
 
     /** One parameterized matrix case. */
