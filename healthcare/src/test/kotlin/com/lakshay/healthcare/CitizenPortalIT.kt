@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -180,5 +182,75 @@ class CitizenPortalIT : IntegrationTestBase() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123456704L, attested = true)))
         ).andExpect(status().isUnauthorized)
+    }
+
+    private fun pdf(name: String = "id.pdf") =
+        MockMultipartFile("file", name, "application/pdf", byteArrayOf(1, 2, 3, 4))
+
+    @Test
+    fun `citizen uploads, lists and downloads own document`() {
+        val caseNo = seedCaseFor("doc@ish.test")
+        mockMvc.perform(
+            multipart("/citizen-api/cases/$caseNo/documents").file(pdf()).param("docType", "ID")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        ).andExpect(status().isOk).andExpect(jsonPath("$.docType").value("ID"))
+
+        mockMvc.perform(get("/citizen-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+            .andExpect(status().isOk).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].contentType").value("application/pdf"))
+
+        val docId = mockMvc.perform(get("/citizen-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+            .andReturn().response.contentAsString.let { objectMapper.readTree(it).get(0).get("docId").asLong() }
+
+        mockMvc.perform(get("/citizen-api/documents/$docId").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `citizen cannot upload to another citizens case`() {
+        val caseNo = seedCaseFor("owner@ish.test")
+        mockMvc.perform(
+            multipart("/citizen-api/cases/$caseNo/documents").file(pdf()).param("docType", "ID")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "intruder@ish.test"))
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `citizen cannot download another citizens document`() {
+        val caseNo = seedCaseFor("owner@ish.test")
+        mockMvc.perform(
+            multipart("/citizen-api/cases/$caseNo/documents").file(pdf()).param("docType", "ID")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test"))
+        ).andExpect(status().isOk)
+        val docId = mockMvc.perform(get("/citizen-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test")))
+            .andReturn().response.contentAsString.let { objectMapper.readTree(it).get(0).get("docId").asLong() }
+
+        mockMvc.perform(get("/citizen-api/documents/$docId").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "intruder@ish.test")))
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `upload with an unsupported content type is 400`() {
+        val caseNo = seedCaseFor("doc@ish.test")
+        mockMvc.perform(
+            multipart("/citizen-api/cases/$caseNo/documents")
+                .file(MockMultipartFile("file", "x.exe", "application/octet-stream", byteArrayOf(1, 2)))
+                .param("docType", "ID")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `upload with an invalid docType is 400`() {
+        val caseNo = seedCaseFor("doc@ish.test")
+        mockMvc.perform(
+            multipart("/citizen-api/cases/$caseNo/documents").file(pdf()).param("docType", "NONSENSE")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `downloading an unknown document is 404`() {
+        mockMvc.perform(get("/citizen-api/documents/999999").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+            .andExpect(status().isNotFound)
     }
 }

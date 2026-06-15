@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.context.request.WebRequest
 import java.time.LocalDateTime
 import com.lakshay.healthcare.shared.exception.InvalidSsnException
@@ -40,6 +41,10 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ValidationException::class)
     fun handleValidation(ex: ValidationException): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
+
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleUploadTooLarge(ex: MaxUploadSizeExceededException): ResponseEntity<ErrorResponse> =
+        errorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File too large")
 
     @ExceptionHandler(Exception::class)
     fun handleGeneral(ex: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {

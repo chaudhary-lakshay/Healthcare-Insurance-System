@@ -36,3 +36,12 @@ data class ApplyResponse(
     val stateName: String,
     val caseStatus: String
 )
+
+data class DocumentResponse(
+    val docId: Long,
+    val docType: String,
+    val fileName: String? = null,
+    val contentType: String? = null,
+    val status: String,
+    val createdAt: String
+)

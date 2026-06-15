@@ -5,18 +5,22 @@ import com.lakshay.healthcare.application.service.CitizenApplicationRegistration
 import com.lakshay.healthcare.citizen.dto.ApplyResponse
 import com.lakshay.healthcare.citizen.dto.CaseStatusResponse
 import com.lakshay.healthcare.citizen.dto.CitizenApplyRequest
+import com.lakshay.healthcare.citizen.dto.DocumentResponse
 import com.lakshay.healthcare.citizen.dto.NoticeResponse
 import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.entity.DcCase
+import com.lakshay.healthcare.shared.entity.Document
 import com.lakshay.healthcare.shared.exception.ForbiddenException
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.exception.ValidationException
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
 import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
+import com.lakshay.healthcare.shared.repository.DocumentRepository
 import com.lakshay.healthcare.shared.repository.NoticeRepository
 import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 
 @Service
 class CitizenPortalService(
@@ -24,9 +28,47 @@ class CitizenPortalService(
     private val dcCaseRepository: DcCaseRepository,
     private val eligibilityRepository: EligibilityDetailsRepository,
     private val noticeRepository: NoticeRepository,
+    private val documentRepository: DocumentRepository,
     private val applicationService: CitizenApplicationRegistrationService,
     private val auditService: AuditService
 ) {
+
+    private val allowedContentTypes = setOf("application/pdf", "image/jpeg", "image/png")
+    private val allowedDocTypes = setOf("ID", "INCOME", "RESIDENCY", "OTHER")
+
+    // Upload a document to the citizen's OWN case (ownership-checked). Validates type/size; stores bytes.
+    fun uploadDocument(caseNo: Long, docType: String, file: MultipartFile): DocumentResponse {
+        ownershipService.assertCanAccessCase(caseNo)
+        if (file.isEmpty) throw ValidationException("file is required")
+        if (docType.uppercase() !in allowedDocTypes) throw ValidationException("invalid docType: $docType")
+        if (file.contentType !in allowedContentTypes) throw ValidationException("unsupported content type: ${file.contentType}")
+        val email = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
+        val saved = documentRepository.save(
+            Document(
+                caseNo = caseNo, uploadedBy = email, docType = docType.uppercase(),
+                fileName = file.originalFilename, contentType = file.contentType, content = file.bytes
+            )
+        )
+        auditService.record("DOCUMENT_UPLOADED", "Document", saved.docId.toString(), "type=${docType.uppercase()}")
+        return DocumentResponse(saved.docId, saved.docType, saved.fileName, saved.contentType, saved.status, saved.createdAt.toString())
+    }
+
+    // List the citizen's own documents for a case (metadata only — no bytes loaded).
+    fun listDocuments(caseNo: Long): List<DocumentResponse> {
+        ownershipService.assertCanAccessCase(caseNo)
+        return documentRepository.findByCaseNo(caseNo).map {
+            DocumentResponse(it.docId, it.docType, it.fileName, it.contentType, it.status, it.createdAt.toString())
+        }
+    }
+
+    // Download a document. Ownership is re-derived from the document's own case, not a path param.
+    fun downloadDocument(docId: Long): Document {
+        val doc = documentRepository.findById(docId)
+            .orElseThrow { ResourceNotFoundException("Document not found: $docId") }
+        ownershipService.assertCanAccessCase(doc.caseNo)
+        auditService.record("DOCUMENT_VIEWED", "Document", docId.toString())
+        return doc
+    }
     fun getMyCaseStatus(caseNo: Long): CaseStatusResponse {
         ownershipService.assertCanAccessCase(caseNo)
         val case = dcCaseRepository.findByCaseNo(caseNo)
