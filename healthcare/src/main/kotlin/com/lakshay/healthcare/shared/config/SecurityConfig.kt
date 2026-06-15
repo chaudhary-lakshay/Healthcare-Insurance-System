@@ -53,6 +53,7 @@ class SecurityConfig(
                     .requestMatchers("/user-api/**").hasRole("ADMIN")
                     .requestMatchers("/worker-api/**").hasRole("ADMIN")
                     .requestMatchers("/report-api/**").hasAnyRole("ADMIN", "WORKER")
+                    .requestMatchers("/casework-api/**").hasAnyRole("ADMIN", "WORKER")
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
