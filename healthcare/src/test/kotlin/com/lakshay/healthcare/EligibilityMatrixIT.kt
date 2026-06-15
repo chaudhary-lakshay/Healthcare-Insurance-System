@@ -226,6 +226,15 @@ class EligibilityMatrixIT : IntegrationTestBase() {
         }
     }
 
+    @Test
+    fun `ELIG-MATRIX re-determination updates in place without duplicate rows`() {
+        val caseNo = seedCase(planName = "SNAP", empIncome = 100.0)
+        eligibilityService.determineEligibility(caseNo)
+        eligibilityService.determineEligibility(caseNo)
+        assertThat(eligibilityRepository.findAll().count { it.caseNo == caseNo }).isEqualTo(1)
+        assertThat(coTriggerRepository.findAll().count { it.caseNo == caseNo }).isEqualTo(1)
+    }
+
     /** One parameterized matrix case. */
     data class Row(
         val name: String,

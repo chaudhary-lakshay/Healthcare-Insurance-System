@@ -52,7 +52,19 @@ class EligibilityDeterminationService(
 
         val output = applyPlanConditions(planName, income, education, children, citizenAge)
 
-        val eligibilityEntity = EligibilityDetails(
+        // Idempotent: re-running determination updates the case's existing rows instead of
+        // duplicating them. The copy keeps ed_trace_id and the batch-written bank/account fields.
+        val existing = eligibilityRepository.findByCaseNo(caseNo)
+        val eligibilityEntity = existing?.copy(
+            holderName = citizenName,
+            holderSSN = citizenSSN,
+            planName = planName,
+            planStatus = output.planStatus,
+            planStartDate = output.planStartDate,
+            planEndDate = output.planEndDate,
+            benefitAmt = output.benefitAmt,
+            denialReason = output.denialReason
+        ) ?: EligibilityDetails(
             caseNo = caseNo,
             holderName = citizenName,
             holderSSN = citizenSSN,
@@ -65,10 +77,10 @@ class EligibilityDeterminationService(
         )
         eligibilityRepository.save(eligibilityEntity)
 
-        val coTrigger = CoTrigger(
-            caseNo = caseNo,
-            triggerStatus = "PENDING"
-        )
+        // Re-flag the case's trigger PENDING so correspondence re-notifies; don't pile up triggers.
+        val existingTrigger = coTriggerRepository.findByCaseNo(caseNo)
+        val coTrigger = existingTrigger?.copy(triggerStatus = "PENDING")
+            ?: CoTrigger(caseNo = caseNo, triggerStatus = "PENDING")
         coTriggerRepository.save(coTrigger)
 
         // case went through eligibility -> mark DETERMINED (idempotent on re-run)
