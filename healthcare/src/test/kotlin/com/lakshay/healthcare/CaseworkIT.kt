@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -83,5 +84,58 @@ class CaseworkIT : IntegrationTestBase() {
     @Test
     fun `casework needs a token`() {
         mockMvc.perform(get("/casework-api/queue")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `staff assigns a case to an active worker and reads it back`() {
+        val caseNo = seedCase()
+        seedWorker("wk@ish.test", "pass123")
+        mockMvc.perform(
+            put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("wk@ish.test")))
+        ).andExpect(status().isOk).andExpect(jsonPath("$.assignedTo").value("wk@ish.test"))
+
+        mockMvc.perform(get("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth()))
+            .andExpect(status().isOk).andExpect(jsonPath("$.assignedTo").value("wk@ish.test"))
+    }
+
+    @Test
+    fun `reassigning a case updates the assignee`() {
+        val caseNo = seedCase()
+        seedWorker("w1@ish.test", "p")
+        seedWorker("w2@ish.test", "p")
+        mockMvc.perform(
+            put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("w1@ish.test")))
+        ).andExpect(status().isOk)
+        mockMvc.perform(
+            put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("w2@ish.test")))
+        ).andExpect(status().isOk).andExpect(jsonPath("$.assignedTo").value("w2@ish.test"))
+    }
+
+    @Test
+    fun `assigning to a non-worker is 400`() {
+        val caseNo = seedCase()
+        mockMvc.perform(
+            put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("nobody@ish.test")))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `assigning an unknown case is 404`() {
+        seedWorker("wk@ish.test", "p")
+        mockMvc.perform(
+            put("/casework-api/cases/999999/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
+                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("wk@ish.test")))
+        ).andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `getting an assignment that does not exist is 404`() {
+        val caseNo = seedCase()
+        mockMvc.perform(get("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth()))
+            .andExpect(status().isNotFound)
     }
 }

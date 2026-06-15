@@ -16,3 +16,14 @@ data class QueueItemResponse(
     val caseStatus: String,
     val citizenName: String? = null
 )
+
+data class AssignmentRequest(
+    val assignedTo: String
+)
+
+data class AssignmentResponse(
+    val caseNo: Long,
+    val assignedTo: String,
+    val assignedBy: String? = null,
+    val assignedAt: String
+)

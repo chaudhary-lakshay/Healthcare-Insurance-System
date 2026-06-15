@@ -1,5 +1,7 @@
 package com.lakshay.healthcare.casework.controller
 
+import com.lakshay.healthcare.casework.dto.AssignmentRequest
+import com.lakshay.healthcare.casework.dto.AssignmentResponse
 import com.lakshay.healthcare.casework.dto.CaseNoteRequest
 import com.lakshay.healthcare.casework.dto.CaseNoteResponse
 import com.lakshay.healthcare.casework.dto.QueueItemResponse
@@ -25,4 +27,12 @@ class CaseworkController(
     @GetMapping("/queue")
     fun queue(@RequestParam(defaultValue = "SUBMITTED") status: String): ResponseEntity<List<QueueItemResponse>> =
         ResponseEntity.ok(caseworkService.queue(status))
+
+    @PutMapping("/cases/{caseNo}/assignment")
+    fun assign(@PathVariable caseNo: Long, @RequestBody request: AssignmentRequest): ResponseEntity<AssignmentResponse> =
+        ResponseEntity.ok(caseworkService.assign(caseNo, request))
+
+    @GetMapping("/cases/{caseNo}/assignment")
+    fun getAssignment(@PathVariable caseNo: Long): ResponseEntity<AssignmentResponse> =
+        ResponseEntity.ok(caseworkService.getAssignment(caseNo))
 }
