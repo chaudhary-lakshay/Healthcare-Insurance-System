@@ -10,9 +10,11 @@ import com.lakshay.healthcare.citizen.dto.NoticeResponse
 import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.entity.DcCase
 import com.lakshay.healthcare.shared.entity.Document
+import com.lakshay.healthcare.shared.entity.Notice
 import com.lakshay.healthcare.shared.exception.ForbiddenException
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.exception.ValidationException
+import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
 import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
 import com.lakshay.healthcare.shared.repository.DocumentRepository
@@ -20,6 +22,7 @@ import com.lakshay.healthcare.shared.repository.NoticeRepository
 import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 
 @Service
@@ -27,6 +30,7 @@ class CitizenPortalService(
     private val ownershipService: OwnershipService,
     private val dcCaseRepository: DcCaseRepository,
     private val eligibilityRepository: EligibilityDetailsRepository,
+    private val citizenRepository: CitizenAppRegistrationRepository,
     private val noticeRepository: NoticeRepository,
     private val documentRepository: DocumentRepository,
     private val applicationService: CitizenApplicationRegistrationService,
@@ -36,7 +40,14 @@ class CitizenPortalService(
     private val allowedContentTypes = setOf("application/pdf", "image/jpeg", "image/png")
     private val allowedDocTypes = setOf("ID", "INCOME", "RESIDENCY", "OTHER")
 
+    // An RFI is "open" until the citizen acts on it. FAILED never reached them, so it isn't open.
+    private fun isOpenRfi(n: Notice): Boolean =
+        n.noticeType == "RFI" && n.status != "RESOLVED" && n.status != "FAILED"
+
     // Upload a document to the citizen's OWN case (ownership-checked). Validates type/size; stores bytes.
+    // Uploading also clears any open RFI on the case. NOTE: docType is not matched to the RFI's
+    // requested type yet — for now ANY accepted upload resolves all open RFIs on the case.
+    @Transactional
     fun uploadDocument(caseNo: Long, docType: String, file: MultipartFile): DocumentResponse {
         ownershipService.assertCanAccessCase(caseNo)
         if (file.isEmpty) throw ValidationException("file is required")
@@ -50,6 +61,12 @@ class CitizenPortalService(
             )
         )
         auditService.record("DOCUMENT_UPLOADED", "Document", saved.docId.toString(), "type=${docType.uppercase()}")
+
+        val openRfis = noticeRepository.findByCaseNo(caseNo).filter { isOpenRfi(it) }
+        if (openRfis.isNotEmpty()) {
+            openRfis.forEach { noticeRepository.save(it.copy(status = "RESOLVED")) }
+            auditService.record("RFI_RESOLVED", "DcCase", caseNo.toString(), "resolvedBy=docUpload count=${openRfis.size}")
+        }
         return DocumentResponse(saved.docId, saved.docType, saved.fileName, saved.contentType, saved.status, saved.createdAt.toString())
     }
 
@@ -74,6 +91,7 @@ class CitizenPortalService(
         val case = dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
         val elig = eligibilityRepository.findByCaseNo(caseNo)
+        val actionRequired = noticeRepository.findByCaseNo(caseNo).any { isOpenRfi(it) }
         auditService.record("CITIZEN_CASE_VIEWED", "DcCase", caseNo.toString())
         return CaseStatusResponse(
             caseNo = caseNo,
@@ -83,8 +101,39 @@ class CitizenPortalService(
             benefitAmt = elig?.benefitAmt,
             denialReason = elig?.denialReason,
             planStartDate = elig?.planStartDate?.toString(),
-            planEndDate = elig?.planEndDate?.toString()
+            planEndDate = elig?.planEndDate?.toString(),
+            actionRequired = actionRequired
         )
+    }
+
+    // Every case whose application email matches the caller's JWT. Email comes from the token only,
+    // so the filter itself is the ownership boundary — no per-row assertCanAccessCase needed.
+    fun getMyCases(): List<CaseStatusResponse> {
+        val email = SecurityContextHolder.getContext().authentication?.name
+            ?: throw ForbiddenException("No authenticated user")
+        val appIds = citizenRepository.findByEmail(email).map { it.appId }
+        if (appIds.isEmpty()) return emptyList()
+        val cases = appIds.mapNotNull { dcCaseRepository.findByAppId(it) }
+        // One query for the citizen's notices; build the set of cases with an open RFI.
+        val rfiCaseNos = noticeRepository.findByRecipientOrderByCreatedAtDesc(email)
+            .filter { isOpenRfi(it) && it.caseNo != null }
+            .mapNotNull { it.caseNo }
+            .toSet()
+        auditService.record("CITIZEN_CASES_LISTED", "DcCase", null, "count=${cases.size}")
+        return cases.map { case ->
+            val elig = eligibilityRepository.findByCaseNo(case.caseNo)
+            CaseStatusResponse(
+                caseNo = case.caseNo,
+                caseStatus = case.caseStatus.name,
+                planName = elig?.planName,
+                planStatus = elig?.planStatus,
+                benefitAmt = elig?.benefitAmt,
+                denialReason = elig?.denialReason,
+                planStartDate = elig?.planStartDate?.toString(),
+                planEndDate = elig?.planEndDate?.toString(),
+                actionRequired = case.caseNo in rfiCaseNos
+            )
+        }
     }
 
     fun getMyNotices(): List<NoticeResponse> {
@@ -92,7 +141,7 @@ class CitizenPortalService(
             ?: throw ForbiddenException("No authenticated user")
         auditService.record("NOTICE_INBOX_VIEWED", "Notice", null, "own inbox")
         return noticeRepository.findByRecipientOrderByCreatedAtDesc(email).map {
-            NoticeResponse(it.noticeId, it.noticeType, it.subject, it.body, it.status, it.createdAt.toString())
+            NoticeResponse(it.noticeId, it.noticeType, it.subject, it.body, it.status, it.createdAt.toString(), it.caseNo)
         }
     }
 

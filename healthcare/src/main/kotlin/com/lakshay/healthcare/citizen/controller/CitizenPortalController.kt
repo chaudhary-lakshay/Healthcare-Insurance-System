@@ -30,6 +30,10 @@ class CitizenPortalController(
         )
     }
 
+    @GetMapping("/cases")
+    fun myCases(): ResponseEntity<List<CaseStatusResponse>> =
+        ResponseEntity.ok(citizenPortalService.getMyCases())
+
     @GetMapping("/cases/{caseNo}/status")
     fun myCaseStatus(@PathVariable caseNo: Long): ResponseEntity<CaseStatusResponse> =
         ResponseEntity.ok(citizenPortalService.getMyCaseStatus(caseNo))

@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface CitizenAppRegistrationRepository : JpaRepository<com.lakshay.healthcare.shared.entity.CitizenAppRegistration, Long> {
     fun findBySsn(ssn: Long): com.lakshay.healthcare.shared.entity.CitizenAppRegistration?
     fun findByAppId(appId: Long): com.lakshay.healthcare.shared.entity.CitizenAppRegistration?
+    fun findByEmail(email: String): List<com.lakshay.healthcare.shared.entity.CitizenAppRegistration>
 }

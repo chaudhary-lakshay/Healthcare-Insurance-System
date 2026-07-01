@@ -9,7 +9,9 @@ data class CaseStatusResponse(
     val benefitAmt: Double? = null,
     val denialReason: String? = null,
     val planStartDate: String? = null,
-    val planEndDate: String? = null
+    val planEndDate: String? = null,
+    // True while an unresolved RFI ("we need more info") is open on this case.
+    val actionRequired: Boolean = false
 )
 
 data class NoticeResponse(
@@ -18,7 +20,9 @@ data class NoticeResponse(
     val subject: String? = null,
     val body: String? = null,
     val status: String,
-    val createdAt: String
+    val createdAt: String,
+    // The case this notice is about, when it has one (e.g. RFI). Lets the app deep-link.
+    val caseNo: Long? = null
 )
 
 data class CitizenApplyRequest(
