@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS CASE_ASSIGNMENT (
+    assignment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    case_no BIGINT NOT NULL UNIQUE,
+    assigned_to VARCHAR(255) NOT NULL,
+    assigned_by VARCHAR(255),
+    assigned_at DATETIME NOT NULL
+);

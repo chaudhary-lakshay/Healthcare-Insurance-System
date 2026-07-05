@@ -1,114 +1,102 @@
 # Insurance System for Health (ISH)
 
-A comprehensive microservices-based health insurance management system designed to handle the entire lifecycle of health insurance applications.
+A health insurance management system covering the full application lifecycle — registration, data
+collection, eligibility, correspondence, benefit issuance, and government reporting.
 
 ## 📋 Overview
 
-The Insurance System for Health (ISH) is a modern, cloud-native application built using Spring Boot that manages the complete lifecycle of health insurance applications - from registration to benefit issuance. The system follows a microservices architecture pattern for scalability, resilience, and maintainability.
+ISH was originally built as 12 Spring Boot microservices. It has since been **consolidated into a
+single Kotlin + Spring Boot 3.3 modular monolith** (`healthcare/`) that runs as one deployable app on
+port **8080**. Each former service is now a module package under `com.lakshay.healthcare.<module>`;
+calls that used to be HTTP (Eureka/Gateway/WebClient) are now in-process `@Service` bean calls.
 
-## 🏗️ Architecture
+> The microservice layout (Eureka, Config Server, API Gateway, per-service ports,
+> `start-all-services.bat`) no longer applies — those directories were removed on this branch.
 
-The system consists of the following microservices:
+## 🏗️ Modules
 
-1. **User Management Service**: Handles user and worker registration, authentication, and profile management
-2. **Application Registration Service**: Manages citizen applications for health insurance
-3. **Data Collection Service**: Collects and manages applicant data including income, education, and dependents
-4. **Eligibility Determination Service**: Determines eligibility for health insurance based on collected data
-5. **Benefit Issuance Service**: Manages the issuance of benefits to eligible applicants
-6. **Correspondence Service**: Handles communication with applicants
-7. **Government Report Service**: Generates reports for government agencies
-8. **Admin Service**: Provides administrative functions for managing plans and system configuration
-9. **Cloud API Gateway**: Routes requests to appropriate microservices
-10. **Eureka Server**: Service discovery for microservices
-11. **Config Server**: Centralized configuration management
-12. **SSA Web API**: Simulates the Social Security Administration web service for SSN validation
+All under `com.lakshay.healthcare`:
+
+| Module | Responsibility |
+|--------|----------------|
+| `user` | User/worker registration, activation, authentication |
+| `application` | Citizen applications for health insurance |
+| `data` | Applicant data — income, education, dependents |
+| `eligibility` | Eligibility determination from collected data |
+| `benefit` | Benefit issuance (Spring Batch CSV job) |
+| `correspondence` | Applicant notifications (PDF + email) |
+| `report` | Government agency reports |
+| `admin` | Plan/category management and admin functions |
+| `ssa` | In-process SSN validation (formerly the SSA web API) |
+
+Shared JPA entities, repositories, security, and config live under `com.lakshay.healthcare.shared`.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Java 17 or higher
-- Maven 3.6 or higher
+- Maven (the bundled `mvnw` wrapper works without a local install)
 - MySQL 8.0 or higher
+- Docker (only for the integration tests — they spin up MySQL via Testcontainers)
 
 ### Database Setup
 
-1. Create a MySQL database named `InsuranceSystemForHealth`
-2. Update the database configuration in each microservice's `application.yml` file if needed
+1. Create a MySQL database named `InsuranceSystemForHealth` at `localhost:3306` (credentials
+   `root`/`root`, configured in `healthcare/src/main/resources/application.yml`).
+2. The schema is owned by **Flyway** — migrations under `src/main/resources/db/migration/` run on
+   startup. Hibernate is `ddl-auto: validate`, so the DB must exist before the app boots.
 
 ### Environment Variables
 
-Set up the following environment variables for email functionality:
-
 ```bash
 # Windows
+set MAIL_USERNAME=your_gmail_address
 set MAIL_PASSWORD=your_app_password_here
 
 # Linux/Mac
+export MAIL_USERNAME=your_gmail_address
 export MAIL_PASSWORD=your_app_password_here
 ```
 
-For Gmail, create an App Password:
-1. Go to your Google Account > Security > 2-Step Verification
-2. At the bottom, click on "App passwords"
-3. Select "Mail" and "Other (Custom name)"
-4. Enter "ISH Application" and click "Generate"
-5. Use the 16-character password that appears
+`jwt.secret` is also read from the environment (with an insecure dev fallback). For Gmail, generate an
+App Password: Google Account → Security → 2-Step Verification → App passwords → "Mail".
 
-### Running the Application
+### Build & Run
 
-Start all services using the provided script:
+Run from the `healthcare/` directory:
 
-```bash
-./start-all-services.bat  # Windows
-./start-all-services.sh   # Linux/Mac
+```powershell
+.\mvnw clean install -DskipTests   # build, skip tests
+.\mvnw spring-boot:run             # run the app (port 8080)
+.\mvnw test                        # run the full test suite
 ```
 
-The services will start in the following order:
-- SSA Web API
-- Config Server
-- Eureka Server
-- Cloud API Gateway
-- User Management Service
-- Application Registration Service
-- Data Collection Service
-- Eligibility Determination Service
-- Benefit Issuance Service
-- Correspondence Service
-- Government Report Service
-- Admin Service
+Swagger UI: http://localhost:8080/swagger-ui.html
 
-Access the API Gateway at: http://localhost:7777
+## 📚 API
 
-## 📚 API Documentation
+All endpoints are served by the single app on **port 8080**. REST paths are preserved from the
+original microservices.
 
-### Postman Collection
-
-[Click here to download the Postman Collection](https://github.com/lakshay1341/Healthcare-Insurance-System/blob/main/ISH-Postman-collections/ISH%20-%20Insurance%20Service%20Hub.postman_collection.json)
-
-The collection includes a comprehensive set of API requests to test the normal flow a user might experience when interacting with the ISH application.
-
-### API Endpoints
-
-#### User Management Service (Port: 4041)
+### User / Worker management (`user`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/user-api/save` | POST | Register a new user |
 | `/user-api/activate` | POST | Activate a user account |
 | `/user-api/login` | POST | User login |
-| `/worker-api/save` | POST | Register a new worker |
-| `/worker-api/activate` | POST | Activate a worker account |
-| `/worker-api/login` | POST | Worker login |
-| `/api/auth/login` | POST | Combined user/worker login |
+| `/user-api/report`, `/find/{id}`, `/update`, `/delete/{id}`, `/changeStatus/{id}/{status}` | GET/PUT/DELETE/PATCH | User administration (ADMIN only) |
+| `/worker-api/...` | — | Same set for workers (admin routes ADMIN only) |
+| `/api/auth/login` | POST | Combined user/worker/admin login |
 
-#### Application Registration Service (Port: 7071)
+### Citizen application (`application`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/CitizenAR-api/save` | POST | Register a new citizen application |
 
-#### Data Collection Service (Port: 7072)
+### Data collection (`data`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -118,64 +106,64 @@ The collection includes a comprehensive set of API requests to test the normal f
 | `/dc-api/saveIncome` | POST | Save income details |
 | `/dc-api/saveEducation` | POST | Save education details |
 | `/dc-api/saveChilds` | POST | Save children details |
+| `/dc-api/summary/{caseNo}` | GET | Assembled case summary |
 
-#### Eligibility Determination Service (Port: 7073)
+### Eligibility (`eligibility`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/ed-api/determine/{caseNo}` | GET | Determine eligibility for a case |
 
-#### Admin Service (Port: 7074)
+### Admin / plans (`admin`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/plan-api/categories` | GET | Get all plan categories |
-| `/plan-api/register` | POST | Register a new plan |
+| `/plan-api/categories` | GET | Get all plan categories (public) |
+| `/plan-api/register`, `/all`, `/find/{id}`, `/update`, `/delete/{id}`, `/status-change/{id}/{status}` | various | Plan management (ADMIN) |
+| `/admin-api/create` | POST | Create an admin (ADMIN) |
+| `/admin/worker-api/...` | various | Worker management by admin (ADMIN) |
 
-#### Correspondence Service (Port: 7075)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/co-triggers-api/process` | GET | Process correspondence triggers |
-
-#### Benefit Issuance Service (Port: 7076)
+### Correspondence (`correspondence`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/bi-api/send` | GET | Send benefits to beneficiaries |
+| `/co-triggers-api/process` | GET | Process pending correspondence triggers |
 
-#### Government Report Service (Port: 7077)
+### Benefit issuance (`benefit`)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/report-api/government/reports` | GET | Get government reports |
+| `/bi-api/send` | GET | Launch the benefit-issuance batch job |
+
+### Government reports (`report`)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/report-api/government/*` | various | Generate / list / fetch / download / delete reports (ADMIN or WORKER) |
+
+A Postman collection lives under `ISH-Postman-collections/`.
 
 ## 🔧 Technical Details
 
-- **Language**: Java 17
-- **Framework**: Spring Boot 3.x
-- **Database**: MySQL 8.0
-- **Service Discovery**: Eureka
-- **API Gateway**: Spring Cloud Gateway
-- **Configuration**: Spring Cloud Config
-- **Circuit Breaker**: Resilience4j
-- **Documentation**: Swagger/OpenAPI
-- **Authentication**: JWT-based authentication
-- **Communication**: WebClient for inter-service communication
+- **Language**: Kotlin 1.9
+- **Framework**: Spring Boot 3.3
+- **Database**: MySQL 8.0, schema managed by Flyway
+- **Batch**: Spring Batch (benefit issuance → CSV)
+- **Documentation**: springdoc OpenAPI / Swagger UI
+- **Authentication**: stateless JWT (`io.jsonwebtoken`)
+- **PDF / Excel**: OpenPDF, Apache POI
 
-## 🔒 Security Features
+## 🔒 Security
 
-- JWT-based authentication
-- Password encryption using BCrypt
-- Role-based access control
-- Secure email communication
+- JWT-based authentication (subject + issuer + audience + expiry validated)
+- BCrypt password hashing
+- Role-based access control (`ADMIN`, `WORKER`); rules in `shared/config/SecurityConfig.kt`
 
 ## 🧪 Testing
 
-A comprehensive test script is provided to test all endpoints:
+Integration tests run against a real MySQL 8 container via **Testcontainers** (Docker required),
+exercising the full filter chain and Flyway migrations:
 
-```bash
-./test-all-endpoints.sh
+```powershell
+.\mvnw test
 ```
-
-Additionally, a Postman collection is available for manual testing of all endpoints.

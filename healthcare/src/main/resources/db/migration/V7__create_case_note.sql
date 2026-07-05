@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS CASE_NOTE (
+    note_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    case_no BIGINT NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    body VARCHAR(2000) NOT NULL,
+    created_at DATETIME NOT NULL
+);
+
+CREATE INDEX idx_case_note_case ON CASE_NOTE (case_no);

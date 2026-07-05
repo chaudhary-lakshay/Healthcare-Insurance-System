@@ -1,0 +1,31 @@
+# Build output
+target/
+build/
+*.class
+
+# Maven wrapper jar (wrapper scripts are tracked, jar is downloaded)
+.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local secrets / env
+*.env
+.env.ps1
+
+# Generated batch output
+benefit_output*.csv
+
+# Parallel scratch monolith — not the active codebase (healthcare/ is)
+ISH-ModularMonolith/
