@@ -56,7 +56,8 @@ class BenefitIssuanceIT : IntegrationTestBase() {
         val lines = BENEFIT_OUTPUT_FILE.readLines()
         assertThat(lines.first()).isEqualTo(csvHeader)
         assertThat(lines).hasSize(2)
-        assertThat(lines[1]).startsWith("101,Jane Doe,123456704,SNAP,200.0,ISH-Bank,ISH101")
+        assertThat(lines[1]).startsWith("101,Jane Doe,***-**-6704,SNAP,200.0,ISH-Bank,ISH101")
+        assertThat(lines[1]).doesNotContain("123456704")
     }
 
     @Test
@@ -106,5 +107,16 @@ class BenefitIssuanceIT : IntegrationTestBase() {
         val row = eligibilityRepository.findByCaseNo(caseNo)!!
         assertThat(row.bankName).isNull()
         assertThat(row.accountNumber).isNull()
+    }
+
+    @Test
+    fun `BENEFIT-1 SSN is masked to last-4 with zero padding`() {
+        approved(caseNo = 601L, ssn = 100000001L)
+
+        runJob().andExpect(status().isOk)
+
+        val line = BENEFIT_OUTPUT_FILE.readLines()[1]
+        assertThat(line).contains("***-**-0001")
+        assertThat(line).doesNotContain("100000001")
     }
 }

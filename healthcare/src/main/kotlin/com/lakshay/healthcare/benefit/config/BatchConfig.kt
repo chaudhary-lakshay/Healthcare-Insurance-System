@@ -2,6 +2,7 @@
 
 import com.lakshay.healthcare.benefit.processor.BenefitItemProcessor
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
+import com.lakshay.healthcare.shared.util.maskSsnLast4
 import jakarta.persistence.EntityManagerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.job.builder.JobBuilder
@@ -9,7 +10,6 @@ import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.item.database.JpaPagingItemReader
 import org.springframework.batch.item.file.FlatFileItemWriter
-import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -43,12 +43,12 @@ class BatchConfig {
         writer.setName("benefitItemWriter")
         writer.setResource(FileSystemResource(outputFile))
 
-        val fieldExtractor = BeanWrapperFieldExtractor<EligibilityDetails>()
-        fieldExtractor.setNames(arrayOf("caseNo", "holderName", "holderSSN", "planName", "benefitAmt", "bankName", "accountNumber"))
-
         val lineAggregator = DelimitedLineAggregator<EligibilityDetails>()
         lineAggregator.setDelimiter(",")
-        lineAggregator.setFieldExtractor(fieldExtractor)
+        // mask at extraction — SSN never leaves the app in full
+        lineAggregator.setFieldExtractor { e ->
+            arrayOf(e.caseNo, e.holderName, maskSsnLast4(e.holderSSN), e.planName, e.benefitAmt, e.bankName, e.accountNumber)
+        }
 
         writer.setLineAggregator(lineAggregator)
         writer.setHeaderCallback { it.write("Case No,Holder Name,SSN,Plan Name,Benefit Amount,Bank Name,Account Number") }
