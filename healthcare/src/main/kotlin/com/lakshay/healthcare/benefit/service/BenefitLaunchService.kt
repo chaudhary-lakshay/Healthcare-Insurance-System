@@ -7,7 +7,7 @@ import org.springframework.batch.core.JobParameter
 import org.springframework.batch.core.JobParameters
 import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.stereotype.Service
-import java.util.Date
+import java.util.UUID
 
 @Service
 class BenefitLaunchService(
@@ -18,8 +18,9 @@ class BenefitLaunchService(
     private val logger = LoggerFactory.getLogger(BenefitLaunchService::class.java)
 
     fun launchBenefitIssuance(): JobExecution {
+        // Date param serializes at second precision — same-second launches collide.
         val params = JobParameters(
-            mapOf("runTime" to JobParameter(Date(), Date::class.java))
+            mapOf("runId" to JobParameter(UUID.randomUUID().toString(), String::class.java))
         )
         val execution = jobLauncher.run(benefitIssuanceJob, params)
         logger.info("Benefit issuance job launched: id={}, status={}", execution.jobId, execution.status)
