@@ -41,7 +41,8 @@ server:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: 604800000
+  expiration: 1800000            # 30 min access tokens — refresh flow covers the rest
+  refresh-expiration: 1209600000 # 14 days
   header: Authorization
   prefix: Bearer
   issuer: ish-health-system

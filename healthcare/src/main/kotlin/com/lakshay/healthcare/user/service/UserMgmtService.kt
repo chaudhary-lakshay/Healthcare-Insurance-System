@@ -14,6 +14,7 @@ import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.exception.AccountLockedException
 import com.lakshay.healthcare.shared.exception.UnauthorizedException
 import com.lakshay.healthcare.shared.security.LoginAttemptService
+import com.lakshay.healthcare.shared.security.RefreshTokenService
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
@@ -31,7 +32,8 @@ class UserMgmtService(
     private val passwordEncoder: PasswordEncoder,
     private val jwtUtil: JwtUtil,
     private val emailUtils: EmailUtils,
-    private val loginAttemptService: LoginAttemptService
+    private val loginAttemptService: LoginAttemptService,
+    private val refreshTokenService: RefreshTokenService
 ) {
 
     fun registerUser(request: RegisterRequest): RegistrationResult = register(request, "USER")
@@ -114,7 +116,8 @@ class UserMgmtService(
         return LoginResponse(
             token = token,
             role = "ROLE_${user.role}",
-            userId = user.userId
+            userId = user.userId,
+            refreshToken = refreshTokenService.issue(user.email, user.role)
         )
     }
 
