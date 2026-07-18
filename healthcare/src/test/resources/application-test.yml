@@ -39,3 +39,5 @@ app:
   auth-throttle:
     ip-limit: 1000000
     max-failures: 1000000
+  renewal-reminders:
+    enabled: false
