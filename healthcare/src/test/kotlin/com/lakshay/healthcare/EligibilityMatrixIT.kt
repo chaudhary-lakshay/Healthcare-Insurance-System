@@ -52,7 +52,8 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     @Autowired private lateinit var eligibilityRepository: EligibilityDetailsRepository
     @Autowired private lateinit var coTriggerRepository: CoTriggerRepository
     @Autowired private lateinit var planRuleRepository: com.lakshay.healthcare.shared.repository.PlanRuleRepository
-    @Autowired private lateinit var householdMemberRepository: com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
+    @Autowired
+    private lateinit var householdMemberRepository: com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
 
     /** The else-branch of the rule engine needs a plan whose name is not one of the six keywords. */
     @BeforeEach
@@ -66,6 +67,7 @@ class EligibilityMatrixIT : IntegrationTestBase() {
      * optional education and children. [age] sets the citizen DOB; null means no DOB (age resolves
      * to 0). Returns the generated case number.
      */
+    @Suppress("LongParameterList") // test data builder — optional case knobs via named default args
     private fun seedCase(
         planName: String,
         empIncome: Double? = null,
@@ -242,7 +244,9 @@ class EligibilityMatrixIT : IntegrationTestBase() {
         // the household total to 350, over the limit -> denied.
         val caseNo = seedCase(planName = "SNAP", empIncome = 250.0)
         householdMemberRepository.save(
-            com.lakshay.healthcare.shared.entity.HouseholdMember(caseNo = caseNo, relationship = "SPOUSE", memberIncome = 100.0)
+            com.lakshay.healthcare.shared.entity.HouseholdMember(
+                caseNo = caseNo, relationship = "SPOUSE", memberIncome = 100.0
+            )
         )
         val result = eligibilityService.determineEligibility(caseNo)
         assertThat(result.planStatus).isEqualTo("DENIED")

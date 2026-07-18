@@ -34,7 +34,9 @@ class CitizenRegistrationIT : IntegrationTestBase() {
     ): ResultActions = mockMvc.perform(
         post("/CitizenAR-api/save").header(HttpHeaders.AUTHORIZATION, adminAuth())
             .contentType(MediaType.APPLICATION_JSON)
-            .content(json(CitizenRegistrationRequest(fullName, email, gender = "F", phoneNo = 5551234L, ssn = ssn, dob = dob)))
+            .content(json(CitizenRegistrationRequest(
+                fullName, email, gender = "F", phoneNo = 5551234L, ssn = ssn, dob = dob
+            )))
     )
 
     @Test
