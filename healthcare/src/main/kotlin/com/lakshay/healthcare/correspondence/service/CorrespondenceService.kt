@@ -32,8 +32,19 @@ class CorrespondenceService(
     private val notificationService: NotificationService
 ) {
 
+    companion object {
+        private const val TITLE_FONT_SIZE = 20f
+        private const val TABLE_COLUMN_COUNT = 6
+        private const val TABLE_WIDTH_PCT = 90f
+        private const val TABLE_SPACING_BEFORE = 10f
+        private const val HEADER_PADDING = 5f
+    }
+
     private val logger = LoggerFactory.getLogger(CorrespondenceService::class.java)
 
+    // TooGenericExceptionCaught: per-trigger resilience — one bad trigger is logged, marked FAILED,
+    // and the loop continues. The broad catch is the point.
+    @Suppress("TooGenericExceptionCaught")
     fun processTriggers(): List<TriggerResponse> {
         val pendingTriggers = coTriggerRepository.findByTriggerStatus("PENDING")
         val responses = mutableListOf<TriggerResponse>()
@@ -62,17 +73,19 @@ class CorrespondenceService(
         logger.info("Processing trigger for case number: {}", trigger.caseNo)
 
         val eligibility = eligibilityRepository.findByCaseNo(trigger.caseNo)
-            ?: throw IllegalStateException("No eligibility details found for case ${trigger.caseNo}")
+            ?: error("No eligibility details found for case ${trigger.caseNo}")
 
         val dcCase = dcCaseRepository.findByCaseNo(trigger.caseNo)
-            ?: throw IllegalStateException("No case found for case number ${trigger.caseNo}")
+            ?: error("No case found for case number ${trigger.caseNo}")
 
         val citizen = citizenRepository.findByAppId(dcCase.appId)
-            ?: throw IllegalStateException("No citizen found for appId ${dcCase.appId}")
+            ?: error("No citizen found for appId ${dcCase.appId}")
 
         val pdfBytes = generateBenefitPdf(eligibility)
 
-        val body = "Hello ${citizen.fullName},<br><br>This email contains complete details about your plan approval or denial.<br><br>Please see the attached PDF for details."
+        val body = "Hello ${citizen.fullName},<br><br>" +
+            "This email contains complete details about your plan approval or denial.<br><br>" +
+            "Please see the attached PDF for details."
         val emailSent = emailUtils.sendEmailWithAttachment(
             subject = "Plan Approval/Denial Notification - Case #${trigger.caseNo}",
             body = body,
@@ -81,7 +94,7 @@ class CorrespondenceService(
             attachmentData = pdfBytes
         )
         if (!emailSent) {
-            throw IllegalStateException("Email delivery failed for case ${trigger.caseNo}")
+            error("Email delivery failed for case ${trigger.caseNo}")
         }
 
         val updatedTrigger = trigger.copy(
@@ -108,22 +121,22 @@ class CorrespondenceService(
         PdfWriter.getInstance(document, outputStream)
         document.open()
 
-        val titleFont = FontFactory.getFont(FontFactory.TIMES_BOLD, 20f)
+        val titleFont = FontFactory.getFont(FontFactory.TIMES_BOLD, TITLE_FONT_SIZE)
         val title = Paragraph("Plan Approval/Denial Communication", titleFont)
         title.alignment = Paragraph.ALIGN_CENTER
         document.add(title)
         document.add(Paragraph(" "))
 
-        val table = PdfPTable(6)
-        table.widthPercentage = 90f
-        table.setSpacingBefore(10f)
+        val table = PdfPTable(TABLE_COLUMN_COUNT)
+        table.widthPercentage = TABLE_WIDTH_PCT
+        table.setSpacingBefore(TABLE_SPACING_BEFORE)
 
         val headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD)
 
         fun addHeaderCell(text: String) {
             val cell = PdfPCell(Phrase(text, headerFont))
             cell.backgroundColor = Color.LIGHT_GRAY
-            cell.setPadding(5f)
+            cell.setPadding(HEADER_PADDING)
             table.addCell(cell)
         }
 

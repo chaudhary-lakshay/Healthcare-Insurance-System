@@ -6,11 +6,15 @@ import org.springframework.batch.item.ItemProcessor
 import org.springframework.stereotype.Component
 
 @Component
-class BenefitItemProcessor : ItemProcessor<com.lakshay.healthcare.shared.entity.EligibilityDetails, com.lakshay.healthcare.shared.entity.EligibilityDetails> {
+class BenefitItemProcessor : ItemProcessor<EligibilityDetails, EligibilityDetails> {
+
+    companion object {
+        private const val ACCOUNT_NUMBER_MODULUS = 100000
+    }
 
     private val logger = LoggerFactory.getLogger(BenefitItemProcessor::class.java)
 
-    override fun process(item: com.lakshay.healthcare.shared.entity.EligibilityDetails): com.lakshay.healthcare.shared.entity.EligibilityDetails {
+    override fun process(item: EligibilityDetails): EligibilityDetails {
         logger.info("Processing benefit for case: ${item.caseNo}, plan: ${item.planName}")
 
         return item.copy(
@@ -20,6 +24,6 @@ class BenefitItemProcessor : ItemProcessor<com.lakshay.healthcare.shared.entity.
     }
 
     private fun generateAccountNumber(caseNo: Long): String {
-        return "ISH${caseNo}${System.currentTimeMillis() % 100000}"
+        return "ISH${caseNo}${System.currentTimeMillis() % ACCOUNT_NUMBER_MODULUS}"
     }
 }

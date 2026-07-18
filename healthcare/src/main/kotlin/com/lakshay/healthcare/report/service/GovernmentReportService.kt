@@ -4,7 +4,10 @@ import com.lakshay.healthcare.report.dto.ReportRequest
 import com.lakshay.healthcare.report.dto.ReportResponse
 import com.lakshay.healthcare.shared.entity.GovernmentReport
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
-import com.lakshay.healthcare.shared.repository.*
+import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
+import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
+import com.lakshay.healthcare.shared.repository.GovernmentReportRepository
+import com.lakshay.healthcare.shared.repository.PlanRepository
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Service
 import org.springframework.util.FileCopyUtils
@@ -17,9 +20,13 @@ class GovernmentReportService(
     private val reportRepository: GovernmentReportRepository,
     private val citizenRepository: CitizenAppRegistrationRepository,
     private val eligibilityRepository: EligibilityDetailsRepository,
-    private val dcCaseRepository: DcCaseRepository,
     private val planRepository: PlanRepository
 ) {
+
+    companion object {
+        private const val SEPARATOR_LENGTH = 50
+        private const val PERCENTAGE_MULTIPLIER = 100
+    }
 
     fun generateReport(request: ReportRequest): ReportResponse {
         val totalApplications = citizenRepository.count()
@@ -29,7 +36,8 @@ class GovernmentReportService(
 
         val reportContent = buildReportContent(request, totalApplications, approvedCount, deniedCount, totalPlans)
 
-        val reportName = "${request.reportType}_${request.periodCovered ?: LocalDate.now().month}_${System.currentTimeMillis()}"
+        val reportName =
+            "${request.reportType}_${request.periodCovered ?: LocalDate.now().month}_${System.currentTimeMillis()}"
 
         val report = GovernmentReport(
             reportName = reportName,
@@ -89,7 +97,11 @@ class GovernmentReportService(
             else -> "text/plain"
         }
         response.contentType = contentType
-        response.setHeader("Content-Disposition", "attachment; filename=\"${report.reportName}.${(report.reportFormat ?: "txt").lowercase()}\"")
+        val ext = (report.reportFormat ?: "txt").lowercase()
+        response.setHeader(
+            "Content-Disposition",
+            "attachment; filename=\"${report.reportName}.$ext\""
+        )
 
         val content = report.reportContent?.toByteArray(StandardCharsets.UTF_8) ?: ByteArray(0)
         FileCopyUtils.copy(content, response.outputStream)
@@ -107,13 +119,18 @@ class GovernmentReportService(
             appendLine("Type: ${request.reportType}")
             appendLine("Period: ${request.periodCovered ?: "Current"}")
             appendLine("Generated: ${LocalDate.now()}")
-            appendLine("=" .repeat(50))
+            appendLine("=" .repeat(SEPARATOR_LENGTH))
             appendLine()
             appendLine("APPLICATION STATISTICS")
             appendLine("Total Applications: $totalApplications")
             appendLine("Approved: $approvedCount")
             appendLine("Denied: $deniedCount")
-            appendLine("Approval Rate: ${if (totalApplications > 0) "%.1f".format(approvedCount.toDouble() / totalApplications * 100) else "0"}%")
+            val approvalRate = if (totalApplications > 0) {
+                "%.1f".format(approvedCount.toDouble() / totalApplications * PERCENTAGE_MULTIPLIER)
+            } else {
+                "0"
+            }
+            appendLine("Approval Rate: $approvalRate%")
             appendLine()
             appendLine("PLAN STATISTICS")
             appendLine("Total Plans: $totalPlans")
@@ -121,7 +138,7 @@ class GovernmentReportService(
             appendLine("BENEFIT STATISTICS")
             appendLine("Total Eligible Citizens: $approvedCount")
             appendLine("Total Denied: $deniedCount")
-            appendLine("=" .repeat(50))
+            appendLine("=" .repeat(SEPARATOR_LENGTH))
             appendLine("End of Report")
         }
     }

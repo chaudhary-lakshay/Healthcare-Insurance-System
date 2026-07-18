@@ -4,13 +4,24 @@ import com.lakshay.healthcare.eligibility.dto.EligibilityResponse
 import com.lakshay.healthcare.eligibility.dto.ProgramResult
 import com.lakshay.healthcare.eligibility.dto.ScreeningResponse
 import com.lakshay.healthcare.shared.entity.CoTrigger
+import com.lakshay.healthcare.shared.entity.DcChildren
+import com.lakshay.healthcare.shared.entity.DcEducation
+import com.lakshay.healthcare.shared.entity.DcIncome
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
-import com.lakshay.healthcare.shared.entity.*
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.lifecycle.CaseStateMachine
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
-import com.lakshay.healthcare.shared.repository.*
+import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
+import com.lakshay.healthcare.shared.repository.CoTriggerRepository
+import com.lakshay.healthcare.shared.repository.DcCaseRepository
+import com.lakshay.healthcare.shared.repository.DcChildrenRepository
+import com.lakshay.healthcare.shared.repository.DcEducationRepository
+import com.lakshay.healthcare.shared.repository.DcIncomeRepository
+import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
+import com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
+import com.lakshay.healthcare.shared.repository.PlanRepository
+import com.lakshay.healthcare.shared.repository.PlanRuleRepository
 import com.lakshay.healthcare.shared.notification.StatusEmailService
 import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.stereotype.Service
@@ -18,6 +29,8 @@ import java.time.LocalDate
 import java.time.Period
 
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class EligibilityDeterminationService(
     private val dcCaseRepository: DcCaseRepository,
     private val dcIncomeRepository: DcIncomeRepository,
@@ -35,6 +48,20 @@ class EligibilityDeterminationService(
     private val statusEmailService: StatusEmailService
 ) {
 
+    companion object {
+        private const val SNAP_DEFAULT_INCOME_LIMIT = 300.0
+        private const val CCAP_MAX_CHILD_AGE = 16
+        private const val CCAP_DEFAULT_INCOME_LIMIT = 300.0
+        private const val MEDCARE_MIN_AGE = 65
+        private const val MEDAID_DEFAULT_INCOME_LIMIT = 300.0
+        private const val QHP_MIN_AGE = 25
+        private const val FALLBACK_INCOME_LIMIT = 10000
+    }
+
+    // LongMethod/CyclomaticComplexMethod: load -> compute -> persist -> notify, reads top-to-bottom.
+    // ThrowsCount: four dependent lookups (case, plan id, plan, income), each guards the next.
+    // Covered end-to-end by EligibilityMatrixIT.
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ThrowsCount")
     fun determineEligibility(caseNo: Long): EligibilityResponse {
         val dcCase = dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
@@ -95,7 +122,8 @@ class EligibilityDeterminationService(
         dcCaseRepository.save(caseStateMachine.transition(dcCase, CaseStatus.DETERMINED))
         auditService.record(
             "CASE_DETERMINED", "DcCase", caseNo.toString(),
-            "planStatus=${output.planStatus}; applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
+            "planStatus=${output.planStatus}; " +
+                "applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
         )
 
         // only on an actual status flip — re-runs are idempotent and shouldn't spam
@@ -138,6 +166,10 @@ class EligibilityDeterminationService(
         return ScreeningResponse(caseNo, programs)
     }
 
+    // LongMethod/CyclomaticComplexMethod: this IS the benefit decision table — one branch per
+    // program (SNAP/CCAP/MEDCARE/MEDAID/CAJW/QHP/fallback). Splitting it scatters the rules.
+    // LongParameterList: the six inputs are the determination context, passed straight through.
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
     private fun applyPlanConditions(
         planName: String,
         income: DcIncome,
@@ -155,7 +187,7 @@ class EligibilityDeterminationService(
 
         return when (planName.uppercase()) {
             "SNAP" -> {
-                if (empIncome < (rule?.incomeLimit ?: 300.0)) {
+                if (empIncome < (rule?.incomeLimit ?: SNAP_DEFAULT_INCOME_LIMIT)) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -176,9 +208,10 @@ class EligibilityDeterminationService(
             "CCAP" -> {
                 val hasEligibleKids = children.isNotEmpty()
                 val allKidsUnderLimit = children.all { child ->
-                    child.childDOB?.let { Period.between(it, LocalDate.now()).years <= 16 } ?: true
+                    child.childDOB?.let { Period.between(it, LocalDate.now()).years <= CCAP_MAX_CHILD_AGE } ?: true
                 }
-                if (empIncome < (rule?.incomeLimit ?: 300.0) && hasEligibleKids && allKidsUnderLimit) {
+                val incomeUnderLimit = empIncome < (rule?.incomeLimit ?: CCAP_DEFAULT_INCOME_LIMIT)
+                if (incomeUnderLimit && hasEligibleKids && allKidsUnderLimit) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -197,7 +230,7 @@ class EligibilityDeterminationService(
                 }
             }
             "MEDCARE" -> {
-                if (citizenAge >= 65) {
+                if (citizenAge >= MEDCARE_MIN_AGE) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -216,7 +249,7 @@ class EligibilityDeterminationService(
                 }
             }
             "MEDAID" -> {
-                if (empIncome < (rule?.incomeLimit ?: 300.0) && propertyIncome == 0.0) {
+                if (empIncome < (rule?.incomeLimit ?: MEDAID_DEFAULT_INCOME_LIMIT) && propertyIncome == 0.0) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -255,7 +288,7 @@ class EligibilityDeterminationService(
                 }
             }
             "QHP" -> {
-                if (citizenAge >= 25) {
+                if (citizenAge >= QHP_MIN_AGE) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -275,7 +308,7 @@ class EligibilityDeterminationService(
             }
             else -> {
                 val totalIncome = empIncome + propertyIncome
-                if (totalIncome < 10000) {
+                if (totalIncome < FALLBACK_INCOME_LIMIT) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,

@@ -9,7 +9,14 @@ import com.lakshay.healthcare.shared.repository.AdminMasterRepository
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/plan-api")
@@ -79,22 +86,26 @@ class AdminUserController(
 
     @PostMapping("/create")
     fun createAdmin(@RequestBody request: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        val email = request["email"] ?: return ResponseEntity.badRequest()
-            .body(mapOf("error" to "Email is required"))
-        val name = request["name"] ?: return ResponseEntity.badRequest()
-            .body(mapOf("error" to "Name is required"))
-        val password = request["password"] ?: return ResponseEntity.badRequest()
-            .body(mapOf("error" to "Password is required"))
+        val email = request["email"]
+        val name = request["name"]
+        val password = request["password"]
 
-        if (adminRepository.findByEmail(email) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(mapOf("error" to "Admin with this email already exists"))
+        // single exit for all validation — detekt caps returns at 2
+        val error = when {
+            email == null -> HttpStatus.BAD_REQUEST to "Email is required"
+            name == null -> HttpStatus.BAD_REQUEST to "Name is required"
+            password == null -> HttpStatus.BAD_REQUEST to "Password is required"
+            adminRepository.findByEmail(email) != null -> HttpStatus.CONFLICT to "Admin with this email already exists"
+            else -> null
+        }
+        if (error != null) {
+            return ResponseEntity.status(error.first).body(mapOf("error" to error.second))
         }
 
         val admin = AdminMaster(
-            name = name,
-            email = email,
-            password = passwordEncoder.encode(password),
+            name = name!!,
+            email = email!!,
+            password = passwordEncoder.encode(password!!),
             role = "ADMIN",
             activeSw = "Y"
         )

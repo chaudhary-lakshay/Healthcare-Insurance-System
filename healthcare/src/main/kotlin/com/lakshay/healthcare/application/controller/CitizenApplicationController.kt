@@ -6,7 +6,12 @@ import com.lakshay.healthcare.application.dto.CitizenRegistrationResponse
 import com.lakshay.healthcare.application.service.CaseTimelineService
 import com.lakshay.healthcare.application.service.CitizenApplicationRegistrationService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/CitizenAR-api")

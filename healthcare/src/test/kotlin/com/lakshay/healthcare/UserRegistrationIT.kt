@@ -122,7 +122,8 @@ class UserRegistrationIT : IntegrationTestBase() {
         val tempPwd = captureTempPassword()
 
         mockMvc.perform(
-            post("/worker-api/activate").with(servletPath("/worker-api/activate")).contentType(MediaType.APPLICATION_JSON)
+            post("/worker-api/activate")
+                .with(servletPath("/worker-api/activate")).contentType(MediaType.APPLICATION_JSON)
                 .content(json(ActivateRequest(email = email, tempPassword = tempPwd, newPassword = "newpass1")))
         ).andExpect(status().isOk)
         assertThat(workerRepository.findByEmail(email)!!.activeSw).isEqualTo("Y")

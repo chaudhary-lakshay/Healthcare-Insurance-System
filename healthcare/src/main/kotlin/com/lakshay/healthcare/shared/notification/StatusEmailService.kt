@@ -9,6 +9,8 @@ import org.thymeleaf.spring6.SpringTemplateEngine
 // send leaves a Notice row. Model is a whitelist — no SSN, no entities, ever.
 // Nothing here throws: a mail hiccup must not block the state change that caused it.
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class StatusEmailService(
     private val templateEngine: SpringTemplateEngine,
     private val notificationService: NotificationService
@@ -50,6 +52,8 @@ class StatusEmailService(
         )
     }
 
+    // TooGenericExceptionCaught: a failed status email must not break the state change that triggered it.
+    @Suppress("TooGenericExceptionCaught")
     private fun send(caseNo: Long, recipient: String, type: String, subject: String, model: Map<String, Any?>) {
         try {
             val html = templateEngine.process("mail/status-change", Context().apply { setVariables(model) })

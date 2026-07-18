@@ -1,8 +1,26 @@
 ﻿package com.lakshay.healthcare.data.service
 
-import com.lakshay.healthcare.data.dto.*
-import com.lakshay.healthcare.shared.entity.*
-import com.lakshay.healthcare.shared.repository.*
+import com.lakshay.healthcare.data.dto.CaseResponse
+import com.lakshay.healthcare.data.dto.ChildrenRequest
+import com.lakshay.healthcare.data.dto.DcSummaryResponse
+import com.lakshay.healthcare.data.dto.EducationRequest
+import com.lakshay.healthcare.data.dto.HouseholdMemberRequest
+import com.lakshay.healthcare.data.dto.HouseholdMemberResponse
+import com.lakshay.healthcare.data.dto.IncomeRequest
+import com.lakshay.healthcare.data.dto.PlanNameResponse
+import com.lakshay.healthcare.data.dto.PlanSelectionRequest
+import com.lakshay.healthcare.shared.entity.DcCase
+import com.lakshay.healthcare.shared.entity.DcChildren
+import com.lakshay.healthcare.shared.entity.DcEducation
+import com.lakshay.healthcare.shared.entity.DcIncome
+import com.lakshay.healthcare.shared.entity.HouseholdMember
+import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
+import com.lakshay.healthcare.shared.repository.DcCaseRepository
+import com.lakshay.healthcare.shared.repository.DcChildrenRepository
+import com.lakshay.healthcare.shared.repository.DcEducationRepository
+import com.lakshay.healthcare.shared.repository.DcIncomeRepository
+import com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
+import com.lakshay.healthcare.shared.repository.PlanRepository
 import com.lakshay.healthcare.shared.exception.DuplicateResourceException
 import com.lakshay.healthcare.shared.exception.ValidationException
 import com.lakshay.healthcare.shared.audit.AuditService
@@ -11,6 +29,8 @@ import org.springframework.stereotype.Service
 import java.time.LocalDate
 
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class DataCollectionService(
     private val dcCaseRepository: DcCaseRepository,
     private val dcIncomeRepository: DcIncomeRepository,
@@ -78,6 +98,9 @@ class DataCollectionService(
         }
     }
 
+    // ThrowsCount: three distinct client errors (case-not-found 404, two 400 validations);
+    // folding them would blur the messages/types or reorder the dob parse. Keep them explicit.
+    @Suppress("ThrowsCount")
     fun saveHouseholdMember(request: HouseholdMemberRequest): Long {
         dcCaseRepository.findByCaseNo(request.caseNo)
             ?: throw ResourceNotFoundException("Case not found: ${request.caseNo}")
@@ -93,7 +116,10 @@ class DataCollectionService(
                 memberIncome = request.memberIncome
             )
         )
-        auditService.record("HOUSEHOLD_MEMBER_ADDED", "HouseholdMember", saved.memberId.toString(), "relationship=${request.relationship}")
+        auditService.record(
+            "HOUSEHOLD_MEMBER_ADDED", "HouseholdMember", saved.memberId.toString(),
+            "relationship=${request.relationship}"
+        )
         return saved.memberId
     }
 
@@ -123,7 +149,10 @@ class DataCollectionService(
                 ChildrenRequest(caseNo = it.caseNo, childDOB = it.childDOB?.toString(), childSSN = it.childSSN)
             },
             householdMembers = householdMembers.map {
-                HouseholdMemberResponse(it.memberId, it.caseNo, it.fullName, it.relationship, it.dob?.toString(), it.memberIncome)
+                HouseholdMemberResponse(
+                    it.memberId, it.caseNo, it.fullName,
+                    it.relationship, it.dob?.toString(), it.memberIncome
+                )
             },
             householdSize = 1 + householdMembers.size
         )

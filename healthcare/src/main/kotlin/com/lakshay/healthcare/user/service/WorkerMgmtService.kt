@@ -36,12 +36,16 @@ class WorkerMgmtService(
     private val refreshTokenService: RefreshTokenService
 ) {
 
+    companion object {
+        private const val PASSWORD_LENGTH = 6
+    }
+
     fun registerWorker(request: RegisterRequest): WorkerRegistrationResult {
         if (workerRepository.findByEmail(request.email) != null) {
             throw DuplicateResourceException("Worker with email ${request.email} already exists")
         }
 
-        val tempPwd = generateRandomPassword(6)
+        val tempPwd = generateRandomPassword(PASSWORD_LENGTH)
 
         val worker = WorkerMaster(
             name = request.name,
@@ -90,6 +94,9 @@ class WorkerMgmtService(
         return "Worker activated successfully"
     }
 
+    // ThrowsCount: distinct auth failures (locked / unknown / bad password / not activated),
+    // each its own status; folding would blur the 401 reasons.
+    @Suppress("ThrowsCount")
     fun loginWorker(request: LoginRequest): LoginResponse {
         if (loginAttemptService.isLocked(request.email)) {
             throw AccountLockedException(loginAttemptService.lockoutSeconds())

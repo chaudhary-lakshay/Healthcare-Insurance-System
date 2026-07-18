@@ -12,7 +12,14 @@ import com.lakshay.healthcare.casework.dto.RfiRequest
 import com.lakshay.healthcare.casework.dto.RfiResponse
 import com.lakshay.healthcare.casework.service.CaseworkService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/casework-api")
@@ -34,7 +41,10 @@ class CaseworkController(
         ResponseEntity.ok(caseworkService.queue(status))
 
     @PutMapping("/cases/{caseNo}/assignment")
-    fun assign(@PathVariable caseNo: Long, @RequestBody request: AssignmentRequest): ResponseEntity<AssignmentResponse> =
+    fun assign(
+        @PathVariable caseNo: Long,
+        @RequestBody request: AssignmentRequest
+    ): ResponseEntity<AssignmentResponse> =
         ResponseEntity.ok(caseworkService.assign(caseNo, request))
 
     @GetMapping("/cases/{caseNo}/assignment")
@@ -50,6 +60,9 @@ class CaseworkController(
         ResponseEntity.ok(caseworkService.listDocuments(caseNo))
 
     @PostMapping("/documents/{docId}/review")
-    fun review(@PathVariable docId: Long, @RequestBody request: DocumentReviewRequest): ResponseEntity<DocumentReviewResponse> =
+    fun review(
+        @PathVariable docId: Long,
+        @RequestBody request: DocumentReviewRequest
+    ): ResponseEntity<DocumentReviewResponse> =
         ResponseEntity.ok(caseworkService.reviewDocument(docId, request))
 }

@@ -54,16 +54,20 @@ class RenewalReminderService(
         if (noticeRepository.existsByCaseNoAndNoticeTypeAndStatus(caseNo, type, "SENT")) return false
         val email = dcCaseRepository.findByCaseNo(caseNo)
             ?.let { citizenRepository.findByAppId(it.appId)?.email }
-        if (email == null) {
-            log.warn("No citizen email for case {}, renewal reminder skipped", caseNo)
-            return false
+        return when {
+            email == null -> {
+                log.warn("No citizen email for case {}, renewal reminder skipped", caseNo)
+                false
+            }
+            else -> {
+                val notice = notificationService.notifyEmail(
+                    caseNo = caseNo, recipient = email, noticeType = type,
+                    subject = "Your ${planName ?: "plan"} renews soon - Case #$caseNo",
+                    body = "Your ${planName ?: "plan"} coverage ends on $endDate ($days days away). " +
+                        "Log in to your portal to renew before it lapses."
+                )
+                notice?.status == "SENT"
+            }
         }
-        val notice = notificationService.notifyEmail(
-            caseNo = caseNo, recipient = email, noticeType = type,
-            subject = "Your ${planName ?: "plan"} renews soon - Case #$caseNo",
-            body = "Your ${planName ?: "plan"} coverage ends on $endDate ($days days away). " +
-                "Log in to your portal to renew before it lapses."
-        )
-        return notice?.status == "SENT"
     }
 }

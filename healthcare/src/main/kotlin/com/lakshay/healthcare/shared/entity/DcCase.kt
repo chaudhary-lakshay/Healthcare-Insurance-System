@@ -1,7 +1,14 @@
 ﻿package com.lakshay.healthcare.shared.entity
 
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import org.hibernate.envers.Audited
 
 // Audited: every save lands a row in DC_CASES_AUD — that's the citizen's status timeline.

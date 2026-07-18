@@ -1,9 +1,22 @@
 ﻿package com.lakshay.healthcare.data.controller
 
-import com.lakshay.healthcare.data.dto.*
+import com.lakshay.healthcare.data.dto.CaseResponse
+import com.lakshay.healthcare.data.dto.ChildrenRequest
+import com.lakshay.healthcare.data.dto.DcSummaryResponse
+import com.lakshay.healthcare.data.dto.EducationRequest
+import com.lakshay.healthcare.data.dto.HouseholdMemberRequest
+import com.lakshay.healthcare.data.dto.IncomeRequest
+import com.lakshay.healthcare.data.dto.PlanNameResponse
+import com.lakshay.healthcare.data.dto.PlanSelectionRequest
 import com.lakshay.healthcare.data.service.DataCollectionService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/dc-api")

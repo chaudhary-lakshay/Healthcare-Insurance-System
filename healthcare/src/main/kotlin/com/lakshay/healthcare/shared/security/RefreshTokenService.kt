@@ -27,6 +27,12 @@ class RefreshTokenService(
     private val userRepository: UserMasterRepository,
     @Value("\${jwt.refresh-expiration}") private val refreshExpirationMs: Long
 ) {
+
+    companion object {
+        private const val TOKEN_BYTE_LENGTH = 32
+        private const val MS_PER_SECOND = 1000
+    }
+
     private val log = LoggerFactory.getLogger(RefreshTokenService::class.java)
     private val random = SecureRandom()
 
@@ -40,6 +46,9 @@ class RefreshTokenService(
 
     // noRollbackFor: the 401 must NOT undo the family revocation written in this
     // same tx — otherwise reuse detection rolls itself back
+    // ThrowsCount: distinct 401 reasons (unknown / expired / already-used reuse detection),
+    // each with its own message — reuse detection especially must stay explicit.
+    @Suppress("ThrowsCount")
     @Transactional(noRollbackFor = [UnauthorizedException::class])
     fun rotate(rawToken: String): RotatedToken {
         val hash = sha256(rawToken)
@@ -76,7 +85,7 @@ class RefreshTokenService(
     }
 
     private fun newToken(email: String, role: String, familyId: String): String {
-        val bytes = ByteArray(32)
+        val bytes = ByteArray(TOKEN_BYTE_LENGTH)
         random.nextBytes(bytes)
         val raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
         refreshTokenRepository.save(
@@ -85,7 +94,7 @@ class RefreshTokenService(
                 familyId = familyId,
                 userEmail = email,
                 role = role,
-                expiresAt = LocalDateTime.now().plusSeconds(refreshExpirationMs / 1000)
+                expiresAt = LocalDateTime.now().plusSeconds(refreshExpirationMs / MS_PER_SECOND)
             )
         )
         return raw

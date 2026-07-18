@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class CitizenPortalService(
     private val ownershipService: OwnershipService,
     private val dcCaseRepository: DcCaseRepository,
@@ -50,9 +52,13 @@ class CitizenPortalService(
     @Transactional
     fun uploadDocument(caseNo: Long, docType: String, file: MultipartFile): DocumentResponse {
         ownershipService.assertCanAccessCase(caseNo)
-        if (file.isEmpty) throw ValidationException("file is required")
-        if (docType.uppercase() !in allowedDocTypes) throw ValidationException("invalid docType: $docType")
-        if (file.contentType !in allowedContentTypes) throw ValidationException("unsupported content type: ${file.contentType}")
+        val validationError = when {
+            file.isEmpty -> "file is required"
+            docType.uppercase() !in allowedDocTypes -> "invalid docType: $docType"
+            file.contentType !in allowedContentTypes -> "unsupported content type: ${file.contentType}"
+            else -> null
+        }
+        if (validationError != null) throw ValidationException(validationError)
         val email = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
         val saved = documentRepository.save(
             Document(
@@ -65,9 +71,15 @@ class CitizenPortalService(
         val openRfis = noticeRepository.findByCaseNo(caseNo).filter { isOpenRfi(it) }
         if (openRfis.isNotEmpty()) {
             openRfis.forEach { noticeRepository.save(it.copy(status = "RESOLVED")) }
-            auditService.record("RFI_RESOLVED", "DcCase", caseNo.toString(), "resolvedBy=docUpload count=${openRfis.size}")
+            auditService.record(
+                "RFI_RESOLVED", "DcCase", caseNo.toString(),
+                "resolvedBy=docUpload count=${openRfis.size}"
+            )
         }
-        return DocumentResponse(saved.docId, saved.docType, saved.fileName, saved.contentType, saved.status, saved.createdAt.toString())
+        return DocumentResponse(
+            saved.docId, saved.docType, saved.fileName,
+            saved.contentType, saved.status, saved.createdAt.toString()
+        )
     }
 
     // List the citizen's own documents for a case (metadata only — no bytes loaded).
@@ -141,7 +153,10 @@ class CitizenPortalService(
             ?: throw ForbiddenException("No authenticated user")
         auditService.record("NOTICE_INBOX_VIEWED", "Notice", null, "own inbox")
         return noticeRepository.findByRecipientOrderByCreatedAtDesc(email).map {
-            NoticeResponse(it.noticeId, it.noticeType, it.subject, it.body, it.status, it.createdAt.toString(), it.caseNo)
+            NoticeResponse(
+                it.noticeId, it.noticeType, it.subject, it.body,
+                it.status, it.createdAt.toString(), it.caseNo
+            )
         }
     }
 

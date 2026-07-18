@@ -31,11 +31,12 @@ class RateLimitFilter(
             "/worker-api/login",
             "/worker-api/activate"
         )
+        private const val CACHE_MAX_SIZE = 100_000L
     }
 
     private val buckets: LoadingCache<String, Bucket> = Caffeine.newBuilder()
         .expireAfterAccess(window.multipliedBy(2))
-        .maximumSize(100_000) // spoofed-IP flood shouldn't OOM us
+        .maximumSize(CACHE_MAX_SIZE) // spoofed-IP flood shouldn't OOM us
         .build { _ ->
             Bucket.builder()
                 .addLimit(Bandwidth.classic(limit, Refill.intervally(limit, window)))

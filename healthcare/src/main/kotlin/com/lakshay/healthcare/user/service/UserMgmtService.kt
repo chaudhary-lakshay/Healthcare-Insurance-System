@@ -27,6 +27,8 @@ data class RegistrationResult(
 )
 
 @Service
+// TooManyFunctions: cohesive user lifecycle (register/activate/login/CRUD) in one service.
+@Suppress("TooManyFunctions")
 class UserMgmtService(
     private val userRepository: UserMasterRepository,
     private val passwordEncoder: PasswordEncoder,
@@ -35,6 +37,10 @@ class UserMgmtService(
     private val loginAttemptService: LoginAttemptService,
     private val refreshTokenService: RefreshTokenService
 ) {
+
+    companion object {
+        private const val PASSWORD_LENGTH = 6
+    }
 
     fun registerUser(request: RegisterRequest): RegistrationResult = register(request, "USER")
 
@@ -45,7 +51,7 @@ class UserMgmtService(
             throw DuplicateResourceException("User with email ${request.email} already exists")
         }
 
-        val tempPwd = generateRandomPassword(6)
+        val tempPwd = generateRandomPassword(PASSWORD_LENGTH)
 
         val user = UserMaster(
             name = request.name,
@@ -91,6 +97,9 @@ class UserMgmtService(
         return "User activated successfully"
     }
 
+    // ThrowsCount: distinct auth failures (locked / unknown / bad password / not activated),
+    // each its own status; folding would blur the 401 reasons.
+    @Suppress("ThrowsCount")
     fun loginUser(request: LoginRequest): LoginResponse {
         if (loginAttemptService.isLocked(request.email)) {
             throw AccountLockedException(loginAttemptService.lockoutSeconds())

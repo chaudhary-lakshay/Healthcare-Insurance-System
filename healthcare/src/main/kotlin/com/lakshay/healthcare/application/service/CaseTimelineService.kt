@@ -42,7 +42,10 @@ class CaseTimelineService(
             val (entity, revision) = (row as Array<*>).let { it[0] as DcCase to it[1] as DefaultRevisionEntity }
             TimelineEntry(
                 status = entity.caseStatus.name,
-                at = Instant.ofEpochMilli(revision.timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime().toString()
+                at = Instant.ofEpochMilli(revision.timestamp)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime()
+                    .toString()
             )
         }.distinctByConsecutiveStatus()
 

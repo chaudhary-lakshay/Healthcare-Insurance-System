@@ -22,10 +22,14 @@ class WebConfig(
             .ifEmpty { listOf("*") }
 
         if (origins.contains("*")) {
-            log.warn("CORS allowed-origins is '*' (all origins allowed). Set app.cors.allowed-origins to a specific list in production.")
+            log.warn(
+                "CORS allowed-origins is '*' (all origins allowed). " +
+                    "Set app.cors.allowed-origins to a specific list in production."
+            )
         }
 
         return object : WebMvcConfigurer {
+            @Suppress("SpreadOperator") // allowedOrigins is vararg — the configured list must be spread
             override fun addCorsMappings(registry: CorsRegistry) {
                 registry.addMapping("/**")
                     .allowedOrigins(*origins.toTypedArray())

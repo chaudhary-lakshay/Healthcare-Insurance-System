@@ -51,7 +51,9 @@ class GovernmentReportIT : IntegrationTestBase() {
         }
         repeat(denied) { i ->
             eligibilityRepository.save(
-                EligibilityDetails(caseNo = 2000L + i, planName = "SNAP", planStatus = "DENIED", denialReason = "High Income")
+                EligibilityDetails(
+                    caseNo = 2000L + i, planName = "SNAP", planStatus = "DENIED", denialReason = "High Income"
+                )
             )
         }
     }

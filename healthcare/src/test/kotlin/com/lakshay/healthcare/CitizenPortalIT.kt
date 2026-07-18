@@ -96,7 +96,10 @@ class CitizenPortalIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/citizen-api/register").with(servletPath("/citizen-api/register"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(RegisterRequest(name = "New Citizen", password = "ignored", email = "newcit@ish.test", gender = "F")))
+                .content(json(RegisterRequest(
+                    name = "New Citizen", password = "ignored",
+                    email = "newcit@ish.test", gender = "F"
+                )))
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.userId").isNumber)
@@ -124,8 +127,14 @@ class CitizenPortalIT : IntegrationTestBase() {
 
     @Test
     fun `CITIZEN sees only own notices`() {
-        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(recipient = "me@ish.test", channel = "PORTAL", noticeType = "PLAN_DECISION", subject = "yours", body = "b"))
-        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(recipient = "other@ish.test", channel = "PORTAL", noticeType = "PLAN_DECISION", subject = "theirs", body = "b"))
+        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(
+            recipient = "me@ish.test", channel = "PORTAL",
+            noticeType = "PLAN_DECISION", subject = "yours", body = "b"
+        ))
+        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(
+            recipient = "other@ish.test", channel = "PORTAL",
+            noticeType = "PLAN_DECISION", subject = "theirs", body = "b"
+        ))
         mockMvc.perform(
             get("/citizen-api/notices").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "me@ish.test"))
         )
@@ -145,7 +154,10 @@ class CitizenPortalIT : IntegrationTestBase() {
             post("/citizen-api/applications")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "applicant@ish.test"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "Jane Doe", gender = "F", ssn = 123456704L, attested = true)))
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                    fullName = "Jane Doe", gender = "F",
+                    ssn = 123456704L, attested = true
+                )))
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.stateName").value("California"))
@@ -161,7 +173,10 @@ class CitizenPortalIT : IntegrationTestBase() {
             post("/citizen-api/applications")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "a@ish.test"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123456704L, attested = false)))
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                    fullName = "A", gender = "F",
+                    ssn = 123456704L, attested = false
+                )))
         ).andExpect(status().isBadRequest)
     }
 
@@ -171,7 +186,10 @@ class CitizenPortalIT : IntegrationTestBase() {
             post("/citizen-api/applications")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "a@ish.test"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123L, attested = true)))
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                    fullName = "A", gender = "F",
+                    ssn = 123L, attested = true
+                )))
         ).andExpect(status().isBadRequest)
     }
 
@@ -180,7 +198,10 @@ class CitizenPortalIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/citizen-api/applications")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(fullName = "A", gender = "F", ssn = 123456704L, attested = true)))
+                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                    fullName = "A", gender = "F",
+                    ssn = 123456704L, attested = true
+                )))
         ).andExpect(status().isUnauthorized)
     }
 
@@ -195,13 +216,24 @@ class CitizenPortalIT : IntegrationTestBase() {
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
         ).andExpect(status().isOk).andExpect(jsonPath("$.docType").value("ID"))
 
-        mockMvc.perform(get("/citizen-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
-            .andExpect(status().isOk).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].contentType").value("application/pdf"))
+        mockMvc.perform(
+            get("/citizen-api/cases/$caseNo/documents")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].contentType").value("application/pdf"))
 
-        val docId = mockMvc.perform(get("/citizen-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+        val docId = mockMvc.perform(
+            get("/citizen-api/cases/$caseNo/documents")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        )
             .andReturn().response.contentAsString.let { objectMapper.readTree(it).get(0).get("docId").asLong() }
 
-        mockMvc.perform(get("/citizen-api/documents/$docId").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+        mockMvc.perform(
+            get("/citizen-api/documents/$docId")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        )
             .andExpect(status().isOk)
     }
 
@@ -221,10 +253,16 @@ class CitizenPortalIT : IntegrationTestBase() {
             multipart("/citizen-api/cases/$caseNo/documents").file(pdf()).param("docType", "ID")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test"))
         ).andExpect(status().isOk)
-        val docId = mockMvc.perform(get("/citizen-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test")))
+        val docId = mockMvc.perform(
+            get("/citizen-api/cases/$caseNo/documents")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test"))
+        )
             .andReturn().response.contentAsString.let { objectMapper.readTree(it).get(0).get("docId").asLong() }
 
-        mockMvc.perform(get("/citizen-api/documents/$docId").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "intruder@ish.test")))
+        mockMvc.perform(
+            get("/citizen-api/documents/$docId")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "intruder@ish.test"))
+        )
             .andExpect(status().isForbidden)
     }
 
@@ -250,7 +288,10 @@ class CitizenPortalIT : IntegrationTestBase() {
 
     @Test
     fun `downloading an unknown document is 404`() {
-        mockMvc.perform(get("/citizen-api/documents/999999").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test")))
+        mockMvc.perform(
+            get("/citizen-api/documents/999999")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "doc@ish.test"))
+        )
             .andExpect(status().isNotFound)
     }
 }

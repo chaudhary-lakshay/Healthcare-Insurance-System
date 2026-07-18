@@ -3,7 +3,9 @@
 import com.lakshay.healthcare.benefit.dto.BenefitResponse
 import com.lakshay.healthcare.benefit.service.BenefitLaunchService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/bi-api")
@@ -12,6 +14,8 @@ class BenefitController(
 ) {
 
     @GetMapping("/send")
+    // broad catch on purpose — any batch-launch failure becomes a clean 500 in BenefitResponse shape
+    @Suppress("TooGenericExceptionCaught")
     fun sendBenefits(): ResponseEntity<BenefitResponse> {
         return try {
             val execution = benefitLaunchService.launchBenefitIssuance()

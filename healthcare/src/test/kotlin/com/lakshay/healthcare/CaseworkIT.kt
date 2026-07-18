@@ -26,7 +26,9 @@ class CaseworkIT : IntegrationTestBase() {
 
     private fun seedCase(name: String = "Jane Doe"): Long {
         val app = citizenRepo.save(
-            CitizenAppRegistration(fullName = name, email = "c@ish.test", gender = "F", ssn = 123456704L, stateName = "California")
+            CitizenAppRegistration(
+                fullName = name, email = "c@ish.test", gender = "F", ssn = 123456704L, stateName = "California"
+            )
         )
         return dcCaseRepo.save(DcCase(appId = app.appId)).caseNo
     }
@@ -36,7 +38,8 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         mockMvc.perform(
             post("/casework-api/cases/$caseNo/notes").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(CaseNoteRequest("called citizen, awaiting docs")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(CaseNoteRequest("called citizen, awaiting docs")))
         ).andExpect(status().isOk).andExpect(jsonPath("$.noteId").isNumber)
 
         mockMvc.perform(get("/casework-api/cases/$caseNo/notes").header(HttpHeaders.AUTHORIZATION, adminAuth()))
@@ -59,14 +62,20 @@ class CaseworkIT : IntegrationTestBase() {
     @Test
     fun `worker can access casework`() {
         val caseNo = seedCase()
-        mockMvc.perform(get("/casework-api/cases/$caseNo/notes").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_WORKER")))
+        mockMvc.perform(
+            get("/casework-api/cases/$caseNo/notes")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_WORKER"))
+        )
             .andExpect(status().isOk)
     }
 
     @Test
     fun `citizen is forbidden from casework`() {
         val caseNo = seedCase()
-        mockMvc.perform(get("/casework-api/cases/$caseNo/notes").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "c@ish.test")))
+        mockMvc.perform(
+            get("/casework-api/cases/$caseNo/notes")
+                .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "c@ish.test"))
+        )
             .andExpect(status().isForbidden)
     }
 
@@ -95,7 +104,8 @@ class CaseworkIT : IntegrationTestBase() {
         seedWorker("wk@ish.test", "pass123")
         mockMvc.perform(
             put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("wk@ish.test")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("wk@ish.test")))
         ).andExpect(status().isOk).andExpect(jsonPath("$.assignedTo").value("wk@ish.test"))
 
         mockMvc.perform(get("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth()))
@@ -109,11 +119,14 @@ class CaseworkIT : IntegrationTestBase() {
         seedWorker("w2@ish.test", "p")
         mockMvc.perform(
             put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("w1@ish.test")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("w1@ish.test")))
         ).andExpect(status().isOk)
+
         mockMvc.perform(
             put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("w2@ish.test")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("w2@ish.test")))
         ).andExpect(status().isOk).andExpect(jsonPath("$.assignedTo").value("w2@ish.test"))
     }
 
@@ -122,7 +135,8 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         mockMvc.perform(
             put("/casework-api/cases/$caseNo/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("nobody@ish.test")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("nobody@ish.test")))
         ).andExpect(status().isBadRequest)
     }
 
@@ -131,7 +145,8 @@ class CaseworkIT : IntegrationTestBase() {
         seedWorker("wk@ish.test", "p")
         mockMvc.perform(
             put("/casework-api/cases/999999/assignment").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("wk@ish.test")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.AssignmentRequest("wk@ish.test")))
         ).andExpect(status().isNotFound)
     }
 
@@ -147,7 +162,8 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         mockMvc.perform(
             post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("please upload proof of income")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.RfiRequest("please upload proof of income")))
         ).andExpect(status().isOk).andExpect(jsonPath("$.notificationSent").value(true))
 
         assertThat(noticeRepo.findByRecipientOrderByCreatedAtDesc("c@ish.test").any { it.noticeType == "RFI" }).isTrue
@@ -158,7 +174,8 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         mockMvc.perform(
             post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("confirm ssn 123-45-6789")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.RfiRequest("confirm ssn 123-45-6789")))
         ).andExpect(status().isBadRequest)
     }
 
@@ -167,7 +184,8 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = dcCaseRepo.save(com.lakshay.healthcare.shared.entity.DcCase(appId = 99999L)).caseNo
         mockMvc.perform(
             post("/casework-api/cases/$caseNo/rfi").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.RfiRequest("hello")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.RfiRequest("hello")))
         ).andExpect(status().isNotFound)
     }
 
@@ -175,15 +193,21 @@ class CaseworkIT : IntegrationTestBase() {
     fun `staff lists and reviews a case document`() {
         val caseNo = seedCase()
         val docId = documentRepo.save(
-            com.lakshay.healthcare.shared.entity.Document(caseNo = caseNo, uploadedBy = "c@ish.test", docType = "ID", contentType = "application/pdf", content = byteArrayOf(1, 2, 3))
+            com.lakshay.healthcare.shared.entity.Document(
+                caseNo = caseNo, uploadedBy = "c@ish.test", docType = "ID",
+                contentType = "application/pdf", content = byteArrayOf(1, 2, 3)
+            )
         ).docId
 
         mockMvc.perform(get("/casework-api/cases/$caseNo/documents").header(HttpHeaders.AUTHORIZATION, adminAuth()))
-            .andExpect(status().isOk).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].status").value("UPLOADED"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].status").value("UPLOADED"))
 
         mockMvc.perform(
             post("/casework-api/documents/$docId/review").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("REVIEWED")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("REVIEWED")))
         ).andExpect(status().isOk).andExpect(jsonPath("$.status").value("REVIEWED"))
 
         assertThat(documentRepo.findById(docId).get().status).isEqualTo("REVIEWED")
@@ -193,11 +217,14 @@ class CaseworkIT : IntegrationTestBase() {
     fun `review with a bad decision is 400`() {
         val caseNo = seedCase()
         val docId = documentRepo.save(
-            com.lakshay.healthcare.shared.entity.Document(caseNo = caseNo, uploadedBy = "x", docType = "ID", content = byteArrayOf(1))
+            com.lakshay.healthcare.shared.entity.Document(
+                caseNo = caseNo, uploadedBy = "x", docType = "ID", content = byteArrayOf(1)
+            )
         ).docId
         mockMvc.perform(
             post("/casework-api/documents/$docId/review").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("MAYBE")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("MAYBE")))
         ).andExpect(status().isBadRequest)
     }
 
@@ -205,7 +232,8 @@ class CaseworkIT : IntegrationTestBase() {
     fun `reviewing an unknown document is 404`() {
         mockMvc.perform(
             post("/casework-api/documents/999999/review").header(HttpHeaders.AUTHORIZATION, adminAuth())
-                .contentType(MediaType.APPLICATION_JSON).content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("REVIEWED")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(com.lakshay.healthcare.casework.dto.DocumentReviewRequest("REVIEWED")))
         ).andExpect(status().isNotFound)
     }
 }

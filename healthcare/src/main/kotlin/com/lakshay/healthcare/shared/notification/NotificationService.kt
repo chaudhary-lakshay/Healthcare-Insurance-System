@@ -18,6 +18,8 @@ class NotificationService(
     private val log = LoggerFactory.getLogger(NotificationService::class.java)
 
     // Drop a notice in the recipient's portal inbox. The row itself is the delivery, so it's SENT.
+    // TooGenericExceptionCaught: notification failures are logged, never propagated to the caller.
+    @Suppress("TooGenericExceptionCaught")
     fun notifyPortal(caseNo: Long?, recipient: String, noticeType: String, subject: String, body: String): Notice? =
         try {
             noticeRepository.save(
@@ -33,6 +35,8 @@ class NotificationService(
         }
 
     // Email a notice and record whether it went out.
+    // TooGenericExceptionCaught: notification failures are logged, never propagated to the caller.
+    @Suppress("TooGenericExceptionCaught")
     fun notifyEmail(caseNo: Long?, recipient: String, noticeType: String, subject: String, body: String): Notice? =
         try {
             val saved = noticeRepository.save(
