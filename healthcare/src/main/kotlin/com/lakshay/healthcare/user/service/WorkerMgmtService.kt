@@ -2,19 +2,19 @@
 
 import com.lakshay.healthcare.admin.dto.WorkerDataResponse
 import com.lakshay.healthcare.shared.entity.WorkerMaster
+import com.lakshay.healthcare.shared.exception.AccountLockedException
+import com.lakshay.healthcare.shared.exception.DuplicateResourceException
+import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
+import com.lakshay.healthcare.shared.exception.UnauthorizedException
 import com.lakshay.healthcare.shared.repository.WorkerMasterRepository
 import com.lakshay.healthcare.shared.security.JwtUtil
+import com.lakshay.healthcare.shared.security.LoginAttemptService
+import com.lakshay.healthcare.shared.security.RefreshTokenService
 import com.lakshay.healthcare.shared.util.EmailUtils
 import com.lakshay.healthcare.user.dto.ActivateRequest
 import com.lakshay.healthcare.user.dto.LoginRequest
 import com.lakshay.healthcare.user.dto.LoginResponse
 import com.lakshay.healthcare.user.dto.RegisterRequest
-import com.lakshay.healthcare.shared.exception.DuplicateResourceException
-import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
-import com.lakshay.healthcare.shared.exception.AccountLockedException
-import com.lakshay.healthcare.shared.exception.UnauthorizedException
-import com.lakshay.healthcare.shared.security.LoginAttemptService
-import com.lakshay.healthcare.shared.security.RefreshTokenService
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
@@ -201,8 +201,8 @@ class WorkerMgmtService(
         return """
             <h2>Welcome to Insurance System for Health</h2>
             <p>Your worker registration was successful.</p>
-            <p>Worker ID: ${workerId}</p>
-            <p>Your temporary password is: <b>${tempPwd}</b></p>
+            <p>Worker ID: $workerId</p>
+            <p>Your temporary password is: <b>$tempPwd</b></p>
             <p>Please use your registered email and this temporary password to activate your account.</p>
             <p>Activation URL: http://localhost:8080/worker-api/activate</p>
             <p>Provide your email, temporary password, and a new password of your choice to activate.</p>

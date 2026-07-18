@@ -5,7 +5,6 @@ import com.lakshay.healthcare.application.dto.CitizenRegistrationResponse
 import com.lakshay.healthcare.shared.entity.CitizenAppRegistration
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.ssa.service.SsnValidationService
-import com.lakshay.healthcare.shared.exception.InvalidSsnException
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 

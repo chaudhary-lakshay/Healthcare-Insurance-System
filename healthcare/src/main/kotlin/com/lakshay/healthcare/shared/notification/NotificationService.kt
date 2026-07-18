@@ -24,9 +24,14 @@ class NotificationService(
         try {
             noticeRepository.save(
                 Notice(
-                    caseNo = caseNo, recipient = recipient, channel = "PORTAL",
-                    noticeType = noticeType, subject = subject, body = body,
-                    status = "SENT", sentAt = LocalDateTime.now()
+                    caseNo = caseNo,
+                    recipient = recipient,
+                    channel = "PORTAL",
+                    noticeType = noticeType,
+                    subject = subject,
+                    body = body,
+                    status = "SENT",
+                    sentAt = LocalDateTime.now()
                 )
             )
         } catch (e: Exception) {
@@ -41,8 +46,13 @@ class NotificationService(
         try {
             val saved = noticeRepository.save(
                 Notice(
-                    caseNo = caseNo, recipient = recipient, channel = "EMAIL",
-                    noticeType = noticeType, subject = subject, body = body, status = "PENDING"
+                    caseNo = caseNo,
+                    recipient = recipient,
+                    channel = "EMAIL",
+                    noticeType = noticeType,
+                    subject = subject,
+                    body = body,
+                    status = "PENDING"
                 )
             )
             val ok = emailUtils.sendEmail(subject, body, recipient)

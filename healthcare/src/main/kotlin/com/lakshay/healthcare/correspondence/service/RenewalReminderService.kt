@@ -61,7 +61,9 @@ class RenewalReminderService(
             }
             else -> {
                 val notice = notificationService.notifyEmail(
-                    caseNo = caseNo, recipient = email, noticeType = type,
+                    caseNo = caseNo,
+                    recipient = email,
+                    noticeType = type,
                     subject = "Your ${planName ?: "plan"} renews soon - Case #$caseNo",
                     body = "Your ${planName ?: "plan"} coverage ends on $endDate ($days days away). " +
                         "Log in to your portal to renew before it lapses."

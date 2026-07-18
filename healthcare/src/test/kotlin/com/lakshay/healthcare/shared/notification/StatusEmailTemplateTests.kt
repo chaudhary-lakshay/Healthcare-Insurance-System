@@ -12,24 +12,36 @@ import kotlin.test.assertTrue
 class StatusEmailTemplateTests {
 
     private val engine = SpringTemplateEngine().apply {
-        setTemplateResolver(ClassLoaderTemplateResolver().apply {
-            prefix = "templates/"
-            suffix = ".html"
-            templateMode = TemplateMode.HTML
-        })
+        setTemplateResolver(
+            ClassLoaderTemplateResolver().apply {
+                prefix = "templates/"
+                suffix = ".html"
+                templateMode = TemplateMode.HTML
+            }
+        )
     }
 
     private fun render(model: Map<String, Any?>): String =
         engine.process("mail/status-change", Context().apply { setVariables(model) })
 
     private fun baseModel(status: String) = mutableMapOf<String, Any?>(
-        "citizenName" to "Jane Doe", "caseNo" to 42L, "status" to status,
-        "planName" to null, "benefitAmt" to null, "denialReason" to null, "message" to null
+        "citizenName" to "Jane Doe",
+        "caseNo" to 42L,
+        "status" to status,
+        "planName" to null,
+        "benefitAmt" to null,
+        "denialReason" to null,
+        "message" to null
     )
 
     @Test
     fun `approved shows plan and amount`() {
-        val html = render(baseModel("APPROVED").apply { put("planName", "SNAP"); put("benefitAmt", 200.0) })
+        val html = render(
+            baseModel("APPROVED").apply {
+                put("planName", "SNAP")
+                put("benefitAmt", 200.0)
+            }
+        )
         assertContains(html, "Jane Doe")
         assertContains(html, "SNAP")
         assertContains(html, "approved")
@@ -46,7 +58,12 @@ class StatusEmailTemplateTests {
 
     @Test
     fun `denied shows reason`() {
-        val html = render(baseModel("DENIED").apply { put("planName", "SNAP"); put("denialReason", "High Income") })
+        val html = render(
+            baseModel("DENIED").apply {
+                put("planName", "SNAP")
+                put("denialReason", "High Income")
+            }
+        )
         assertContains(html, "denied")
         assertContains(html, "High Income")
         assertFalse(html.contains("approved"))
@@ -62,7 +79,10 @@ class StatusEmailTemplateTests {
     @Test
     fun `html in model values is escaped`() {
         val html = render(
-            baseModel("DENIED").apply { put("planName", "SNAP"); put("denialReason", "<script>alert(1)</script>") }
+            baseModel("DENIED").apply {
+                put("planName", "SNAP")
+                put("denialReason", "<script>alert(1)</script>")
+            }
         )
         assertTrue(html.contains("&lt;script&gt;"))
         assertFalse(html.contains("<script>alert"))

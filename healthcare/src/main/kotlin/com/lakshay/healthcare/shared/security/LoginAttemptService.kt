@@ -25,6 +25,7 @@ class LoginAttemptService(
 
     private class Attempts {
         val failures = AtomicInteger()
+
         @Volatile
         var lockedUntil: Instant? = null
     }

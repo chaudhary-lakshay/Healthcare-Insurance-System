@@ -87,19 +87,33 @@ abstract class IntegrationTestBase {
     }
 
     @Autowired protected lateinit var mockMvc: MockMvc
+
     @Autowired protected lateinit var objectMapper: ObjectMapper
+
     @Autowired protected lateinit var jwtUtil: JwtUtil
+
     @Autowired protected lateinit var jdbc: JdbcTemplate
+
     @Autowired protected lateinit var passwordEncoder: PasswordEncoder
+
     @Autowired protected lateinit var adminRepository: AdminMasterRepository
+
     @Autowired protected lateinit var categoryRepository: PlanCategoryRepository
+
     @Autowired protected lateinit var planRepository: PlanRepository
+
     @Autowired protected lateinit var userRepository: UserMasterRepository
+
     @Autowired protected lateinit var workerRepository: WorkerMasterRepository
 
-    @Value("\${jwt.secret}") protected lateinit var jwtSecret: String
-    @Value("\${jwt.issuer}") protected lateinit var jwtIssuer: String
-    @Value("\${jwt.audience}") protected lateinit var jwtAudience: String
+    @Value("\${jwt.secret}")
+    protected lateinit var jwtSecret: String
+
+    @Value("\${jwt.issuer}")
+    protected lateinit var jwtIssuer: String
+
+    @Value("\${jwt.audience}")
+    protected lateinit var jwtAudience: String
 
     @MockBean protected lateinit var mailSender: JavaMailSender
 
@@ -153,7 +167,10 @@ abstract class IntegrationTestBase {
      * it; this RequestPostProcessor mirrors that. Only needed on token-less requests.
      */
     protected fun servletPath(path: String): RequestPostProcessor =
-        RequestPostProcessor { req -> req.servletPath = path; req }
+        RequestPostProcessor { req ->
+            req.servletPath = path
+            req
+        }
 
     /** Seed an activated USER with a bcrypt-hashed [rawPassword]. Returns the saved entity. */
     protected fun seedUser(

@@ -18,8 +18,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class CaseTimelineIT : IntegrationTestBase() {
 
     @Autowired lateinit var eligibilityService: EligibilityDeterminationService
+
     @Autowired lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired lateinit var dcIncomeRepo: DcIncomeRepository
 
     private val ownerEmail = "timeline@ish.test"
@@ -27,8 +30,11 @@ class CaseTimelineIT : IntegrationTestBase() {
     private fun seedCase(): Long {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "Tim Line", email = ownerEmail, gender = "M",
-                ssn = 123456705L, stateName = "California"
+                fullName = "Tim Line",
+                email = ownerEmail,
+                gender = "M",
+                ssn = 123456705L,
+                stateName = "California"
             )
         )
         val case = dcCaseRepo.save(DcCase(appId = app.appId, planId = planId("SNAP")))

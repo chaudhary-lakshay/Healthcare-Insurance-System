@@ -35,9 +35,13 @@ import java.time.LocalDate
 class DataCollectionIT : IntegrationTestBase() {
 
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired private lateinit var dcIncomeRepo: DcIncomeRepository
+
     @Autowired private lateinit var dcEducationRepo: DcEducationRepository
+
     @Autowired private lateinit var dcChildrenRepo: DcChildrenRepository
 
     private fun seedCitizen(
@@ -45,8 +49,12 @@ class DataCollectionIT : IntegrationTestBase() {
         fullName: String = "Jane Doe"
     ): Long = citizenRepo.save(
         CitizenAppRegistration(
-            fullName = fullName, email = "citizen@ish.test", gender = "F",
-            ssn = ssn, stateName = "California", dob = LocalDate.of(1990, 1, 1)
+            fullName = fullName,
+            email = "citizen@ish.test",
+            gender = "F",
+            ssn = ssn,
+            stateName = "California",
+            dob = LocalDate.of(1990, 1, 1)
         )
     ).appId
 

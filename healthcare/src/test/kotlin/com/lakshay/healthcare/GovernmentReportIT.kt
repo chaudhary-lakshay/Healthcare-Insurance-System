@@ -31,7 +31,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class GovernmentReportIT : IntegrationTestBase() {
 
     @Autowired private lateinit var reportRepository: GovernmentReportRepository
+
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var eligibilityRepository: EligibilityDetailsRepository
 
     /** Seed [citizens] applications (= "total applications") plus [approved]/[denied] eligibility rows. */
@@ -39,8 +41,11 @@ class GovernmentReportIT : IntegrationTestBase() {
         repeat(citizens) { i ->
             citizenRepo.save(
                 CitizenAppRegistration(
-                    fullName = "Citizen $i", email = "c$i@ish.test", gender = "F",
-                    ssn = 100000000L + i, stateName = "California"
+                    fullName = "Citizen $i",
+                    email = "c$i@ish.test",
+                    gender = "F",
+                    ssn = 100000000L + i,
+                    stateName = "California"
                 )
             )
         }
@@ -52,7 +57,10 @@ class GovernmentReportIT : IntegrationTestBase() {
         repeat(denied) { i ->
             eligibilityRepository.save(
                 EligibilityDetails(
-                    caseNo = 2000L + i, planName = "SNAP", planStatus = "DENIED", denialReason = "High Income"
+                    caseNo = 2000L + i,
+                    planName = "SNAP",
+                    planStatus = "DENIED",
+                    denialReason = "High Income"
                 )
             )
         }
@@ -69,8 +77,12 @@ class GovernmentReportIT : IntegrationTestBase() {
             .content(json(ReportRequest(reportType, reportFormat, periodCovered, departmentName = departmentName)))
     )
 
-    private fun generatedId(reportType: String = "MONTHLY", reportFormat: String = "TEXT",
-                            periodCovered: String? = "JUNE", departmentName: String? = "Health Dept"): Long {
+    private fun generatedId(
+        reportType: String = "MONTHLY",
+        reportFormat: String = "TEXT",
+        periodCovered: String? = "JUNE",
+        departmentName: String? = "Health Dept"
+    ): Long {
         val body = generate(reportType, reportFormat, periodCovered, departmentName)
             .andExpect(status().isCreated).andReturn().response.contentAsString
         return objectMapper.readTree(body).get("reportId").asLong()

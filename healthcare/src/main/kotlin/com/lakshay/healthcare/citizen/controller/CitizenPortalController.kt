@@ -2,8 +2,8 @@ package com.lakshay.healthcare.citizen.controller
 
 import com.lakshay.healthcare.citizen.dto.ApplyResponse
 import com.lakshay.healthcare.citizen.dto.CaseStatusResponse
-import com.lakshay.healthcare.citizen.dto.DocumentResponse
 import com.lakshay.healthcare.citizen.dto.CitizenApplyRequest
+import com.lakshay.healthcare.citizen.dto.DocumentResponse
 import com.lakshay.healthcare.citizen.dto.NoticeResponse
 import com.lakshay.healthcare.citizen.service.CitizenPortalService
 import com.lakshay.healthcare.user.dto.RegisterRequest

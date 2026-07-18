@@ -261,13 +261,21 @@
                 <artifactId>detekt-maven-plugin</artifactId>
                 <version>1.23.7</version>
                 <configuration>
-                    <!-- strict: run detekt's default rule set, no baseline yet -->
+                    <!-- strict: default rules + formatting (ktlint) ruleset.
+                         check only verifies; run detekt with -DautoCorrect=true or the IDE to reformat. -->
                     <report>
                         <report>xml:${project.basedir}/target/detekt/detekt.xml</report>
                         <report>html:${project.basedir}/target/detekt/detekt.html</report>
                         <report>txt:${project.basedir}/target/detekt/detekt.txt</report>
                     </report>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.gitlab.arturbosch.detekt</groupId>
+                        <artifactId>detekt-formatting</artifactId>
+                        <version>1.23.7</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

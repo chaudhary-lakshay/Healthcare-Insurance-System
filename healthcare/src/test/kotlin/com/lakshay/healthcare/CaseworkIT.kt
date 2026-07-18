@@ -20,14 +20,21 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class CaseworkIT : IntegrationTestBase() {
 
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired private lateinit var noticeRepo: com.lakshay.healthcare.shared.repository.NoticeRepository
+
     @Autowired private lateinit var documentRepo: com.lakshay.healthcare.shared.repository.DocumentRepository
 
     private fun seedCase(name: String = "Jane Doe"): Long {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = name, email = "c@ish.test", gender = "F", ssn = 123456704L, stateName = "California"
+                fullName = name,
+                email = "c@ish.test",
+                gender = "F",
+                ssn = 123456704L,
+                stateName = "California"
             )
         )
         return dcCaseRepo.save(DcCase(appId = app.appId)).caseNo
@@ -194,8 +201,11 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         val docId = documentRepo.save(
             com.lakshay.healthcare.shared.entity.Document(
-                caseNo = caseNo, uploadedBy = "c@ish.test", docType = "ID",
-                contentType = "application/pdf", content = byteArrayOf(1, 2, 3)
+                caseNo = caseNo,
+                uploadedBy = "c@ish.test",
+                docType = "ID",
+                contentType = "application/pdf",
+                content = byteArrayOf(1, 2, 3)
             )
         ).docId
 
@@ -218,7 +228,10 @@ class CaseworkIT : IntegrationTestBase() {
         val caseNo = seedCase()
         val docId = documentRepo.save(
             com.lakshay.healthcare.shared.entity.Document(
-                caseNo = caseNo, uploadedBy = "x", docType = "ID", content = byteArrayOf(1)
+                caseNo = caseNo,
+                uploadedBy = "x",
+                docType = "ID",
+                content = byteArrayOf(1)
             )
         ).docId
         mockMvc.perform(

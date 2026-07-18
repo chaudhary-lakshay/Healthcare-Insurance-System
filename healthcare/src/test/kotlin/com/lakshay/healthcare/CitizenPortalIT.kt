@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.mock.web.MockMultipartFile
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -25,22 +25,31 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class CitizenPortalIT : IntegrationTestBase() {
 
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired private lateinit var eligibilityRepo: EligibilityDetailsRepository
+
     @Autowired private lateinit var noticeRepo: com.lakshay.healthcare.shared.repository.NoticeRepository
 
     private fun seedCaseFor(email: String): Long {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "Jane Doe", email = email, gender = "F",
-                ssn = 123456704L, stateName = "California"
+                fullName = "Jane Doe",
+                email = email,
+                gender = "F",
+                ssn = 123456704L,
+                stateName = "California"
             )
         )
         val caseNo = dcCaseRepo.save(DcCase(appId = app.appId)).caseNo
         eligibilityRepo.save(
             EligibilityDetails(
-                caseNo = caseNo, holderName = "Jane Doe",
-                planName = "SNAP", planStatus = "APPROVED", benefitAmt = 200.0
+                caseNo = caseNo,
+                holderName = "Jane Doe",
+                planName = "SNAP",
+                planStatus = "APPROVED",
+                benefitAmt = 200.0
             )
         )
         return caseNo
@@ -96,10 +105,16 @@ class CitizenPortalIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/citizen-api/register").with(servletPath("/citizen-api/register"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(RegisterRequest(
-                    name = "New Citizen", password = "ignored",
-                    email = "newcit@ish.test", gender = "F"
-                )))
+                .content(
+                    json(
+                        RegisterRequest(
+                            name = "New Citizen",
+                            password = "ignored",
+                            email = "newcit@ish.test",
+                            gender = "F"
+                        )
+                    )
+                )
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.userId").isNumber)
@@ -112,8 +127,12 @@ class CitizenPortalIT : IntegrationTestBase() {
     fun `activated citizen logs in with ROLE_CITIZEN`() {
         userRepository.save(
             UserMaster(
-                name = "Active Citizen", password = passwordEncoder.encode("pass123"),
-                email = "active.cit@ish.test", gender = "F", activeSw = "Y", role = "CITIZEN"
+                name = "Active Citizen",
+                password = passwordEncoder.encode("pass123"),
+                email = "active.cit@ish.test",
+                gender = "F",
+                activeSw = "Y",
+                role = "CITIZEN"
             )
         )
         mockMvc.perform(
@@ -127,14 +146,24 @@ class CitizenPortalIT : IntegrationTestBase() {
 
     @Test
     fun `CITIZEN sees only own notices`() {
-        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(
-            recipient = "me@ish.test", channel = "PORTAL",
-            noticeType = "PLAN_DECISION", subject = "yours", body = "b"
-        ))
-        noticeRepo.save(com.lakshay.healthcare.shared.entity.Notice(
-            recipient = "other@ish.test", channel = "PORTAL",
-            noticeType = "PLAN_DECISION", subject = "theirs", body = "b"
-        ))
+        noticeRepo.save(
+            com.lakshay.healthcare.shared.entity.Notice(
+                recipient = "me@ish.test",
+                channel = "PORTAL",
+                noticeType = "PLAN_DECISION",
+                subject = "yours",
+                body = "b"
+            )
+        )
+        noticeRepo.save(
+            com.lakshay.healthcare.shared.entity.Notice(
+                recipient = "other@ish.test",
+                channel = "PORTAL",
+                noticeType = "PLAN_DECISION",
+                subject = "theirs",
+                body = "b"
+            )
+        )
         mockMvc.perform(
             get("/citizen-api/notices").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "me@ish.test"))
         )
@@ -154,10 +183,16 @@ class CitizenPortalIT : IntegrationTestBase() {
             post("/citizen-api/applications")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "applicant@ish.test"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
-                    fullName = "Jane Doe", gender = "F",
-                    ssn = 123456704L, attested = true
-                )))
+                .content(
+                    json(
+                        com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                            fullName = "Jane Doe",
+                            gender = "F",
+                            ssn = 123456704L,
+                            attested = true
+                        )
+                    )
+                )
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.stateName").value("California"))
@@ -173,10 +208,16 @@ class CitizenPortalIT : IntegrationTestBase() {
             post("/citizen-api/applications")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "a@ish.test"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
-                    fullName = "A", gender = "F",
-                    ssn = 123456704L, attested = false
-                )))
+                .content(
+                    json(
+                        com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                            fullName = "A",
+                            gender = "F",
+                            ssn = 123456704L,
+                            attested = false
+                        )
+                    )
+                )
         ).andExpect(status().isBadRequest)
     }
 
@@ -186,10 +227,16 @@ class CitizenPortalIT : IntegrationTestBase() {
             post("/citizen-api/applications")
                 .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "a@ish.test"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
-                    fullName = "A", gender = "F",
-                    ssn = 123L, attested = true
-                )))
+                .content(
+                    json(
+                        com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                            fullName = "A",
+                            gender = "F",
+                            ssn = 123L,
+                            attested = true
+                        )
+                    )
+                )
         ).andExpect(status().isBadRequest)
     }
 
@@ -198,10 +245,16 @@ class CitizenPortalIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/citizen-api/applications")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
-                    fullName = "A", gender = "F",
-                    ssn = 123456704L, attested = true
-                )))
+                .content(
+                    json(
+                        com.lakshay.healthcare.citizen.dto.CitizenApplyRequest(
+                            fullName = "A",
+                            gender = "F",
+                            ssn = 123456704L,
+                            attested = true
+                        )
+                    )
+                )
         ).andExpect(status().isUnauthorized)
     }
 
