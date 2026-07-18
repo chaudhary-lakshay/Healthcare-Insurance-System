@@ -4,7 +4,10 @@ import com.lakshay.healthcare.report.dto.ReportRequest
 import com.lakshay.healthcare.report.dto.ReportResponse
 import com.lakshay.healthcare.shared.entity.GovernmentReport
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
-import com.lakshay.healthcare.shared.repository.*
+import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
+import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
+import com.lakshay.healthcare.shared.repository.GovernmentReportRepository
+import com.lakshay.healthcare.shared.repository.PlanRepository
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Service
 import org.springframework.util.FileCopyUtils
@@ -17,7 +20,6 @@ class GovernmentReportService(
     private val reportRepository: GovernmentReportRepository,
     private val citizenRepository: CitizenAppRegistrationRepository,
     private val eligibilityRepository: EligibilityDetailsRepository,
-    private val dcCaseRepository: DcCaseRepository,
     private val planRepository: PlanRepository
 ) {
 
