@@ -41,7 +41,10 @@ class CaseworkController(
         ResponseEntity.ok(caseworkService.queue(status))
 
     @PutMapping("/cases/{caseNo}/assignment")
-    fun assign(@PathVariable caseNo: Long, @RequestBody request: AssignmentRequest): ResponseEntity<AssignmentResponse> =
+    fun assign(
+        @PathVariable caseNo: Long,
+        @RequestBody request: AssignmentRequest
+    ): ResponseEntity<AssignmentResponse> =
         ResponseEntity.ok(caseworkService.assign(caseNo, request))
 
     @GetMapping("/cases/{caseNo}/assignment")
@@ -57,6 +60,9 @@ class CaseworkController(
         ResponseEntity.ok(caseworkService.listDocuments(caseNo))
 
     @PostMapping("/documents/{docId}/review")
-    fun review(@PathVariable docId: Long, @RequestBody request: DocumentReviewRequest): ResponseEntity<DocumentReviewResponse> =
+    fun review(
+        @PathVariable docId: Long,
+        @RequestBody request: DocumentReviewRequest
+    ): ResponseEntity<DocumentReviewResponse> =
         ResponseEntity.ok(caseworkService.reviewDocument(docId, request))
 }
