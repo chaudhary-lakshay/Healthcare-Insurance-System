@@ -61,7 +61,9 @@ class StatusEmailTemplateTests {
 
     @Test
     fun `html in model values is escaped`() {
-        val html = render(baseModel("DENIED").apply { put("planName", "SNAP"); put("denialReason", "<script>alert(1)</script>") })
+        val html = render(
+            baseModel("DENIED").apply { put("planName", "SNAP"); put("denialReason", "<script>alert(1)</script>") }
+        )
         assertTrue(html.contains("&lt;script&gt;"))
         assertFalse(html.contains("<script>alert"))
     }

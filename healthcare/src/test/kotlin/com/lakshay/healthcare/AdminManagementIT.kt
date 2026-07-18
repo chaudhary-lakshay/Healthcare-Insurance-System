@@ -33,7 +33,9 @@ class AdminManagementIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/admin-api/create").header(HttpHeaders.AUTHORIZATION, adminAuth())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(createAdminBody("email" to "new.admin@ish.test", "name" to "New Admin", "password" to "pass123"))
+                .content(
+                    createAdminBody("email" to "new.admin@ish.test", "name" to "New Admin", "password" to "pass123")
+                )
         )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.adminId").isNumber)

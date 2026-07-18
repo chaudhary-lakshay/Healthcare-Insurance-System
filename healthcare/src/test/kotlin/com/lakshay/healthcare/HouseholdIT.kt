@@ -37,7 +37,12 @@ class HouseholdIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/dc-api/saveHouseholdMember").header(HttpHeaders.AUTHORIZATION, adminAuth())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(HouseholdMemberRequest(caseNo = caseNo, fullName = "John Doe", relationship = "SPOUSE", dob = "1988-05-01", memberIncome = 0.0)))
+                .content(json(
+                    HouseholdMemberRequest(
+                        caseNo = caseNo, fullName = "John Doe", relationship = "SPOUSE",
+                        dob = "1988-05-01", memberIncome = 0.0
+                    )
+                ))
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.memberId").isNumber)

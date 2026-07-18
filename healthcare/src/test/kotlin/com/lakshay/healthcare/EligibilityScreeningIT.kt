@@ -23,7 +23,9 @@ class EligibilityScreeningIT : IntegrationTestBase() {
 
     private fun seedCaseWithIncome(email: String, empIncome: Double? = 100.0): Long {
         val app = citizenRepo.save(
-            CitizenAppRegistration(fullName = "Jane Doe", email = email, gender = "F", ssn = 123456704L, stateName = "California")
+            CitizenAppRegistration(
+                fullName = "Jane Doe", email = email, gender = "F", ssn = 123456704L, stateName = "California"
+            )
         )
         val caseNo = dcCaseRepo.save(DcCase(appId = app.appId)).caseNo
         if (empIncome != null) dcIncomeRepo.save(DcIncome(caseNo = caseNo, empIncome = empIncome, propertyIncome = 0.0))
@@ -44,14 +46,16 @@ class EligibilityScreeningIT : IntegrationTestBase() {
     @Test
     fun `citizen screens own case`() {
         val caseNo = seedCaseWithIncome("owner@ish.test", 100.0)
-        mockMvc.perform(get("/ed-api/screen/$caseNo").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test")))
+        mockMvc.perform(get("/ed-api/screen/$caseNo")
+            .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "owner@ish.test")))
             .andExpect(status().isOk)
     }
 
     @Test
     fun `citizen cannot screen another citizens case`() {
         val caseNo = seedCaseWithIncome("owner@ish.test", 100.0)
-        mockMvc.perform(get("/ed-api/screen/$caseNo").header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "intruder@ish.test")))
+        mockMvc.perform(get("/ed-api/screen/$caseNo")
+            .header(HttpHeaders.AUTHORIZATION, bearer("ROLE_CITIZEN", "intruder@ish.test")))
             .andExpect(status().isForbidden)
     }
 

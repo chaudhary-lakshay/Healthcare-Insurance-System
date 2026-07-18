@@ -34,6 +34,7 @@ class GoldenLifecycleIT : IntegrationTestBase() {
     @Autowired lateinit var coTriggerRepository: CoTriggerRepository
 
     @Test
+    @Suppress("LongMethod") // end-to-end lifecycle test — reads as one top-to-bottom scenario
     fun `full insurance lifecycle from citizen registration to government report`() {
         val auth = adminAuth()
 
