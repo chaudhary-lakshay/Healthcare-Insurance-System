@@ -2,9 +2,7 @@ package com.lakshay.healthcare.shared.security
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.LoadingCache
-import io.github.bucket4j.Bandwidth
 import io.github.bucket4j.Bucket
-import io.github.bucket4j.Refill
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -39,7 +37,7 @@ class RateLimitFilter(
         .maximumSize(CACHE_MAX_SIZE) // spoofed-IP flood shouldn't OOM us
         .build { _ ->
             Bucket.builder()
-                .addLimit(Bandwidth.classic(limit, Refill.intervally(limit, window)))
+                .addLimit { it.capacity(limit).refillIntervally(limit, window) }
                 .build()
         }
 
