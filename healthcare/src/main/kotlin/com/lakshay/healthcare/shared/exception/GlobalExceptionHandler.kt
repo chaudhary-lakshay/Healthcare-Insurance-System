@@ -56,7 +56,7 @@ class GlobalExceptionHandler {
             )
 
     @ExceptionHandler(MaxUploadSizeExceededException::class)
-    fun handleUploadTooLarge(ex: MaxUploadSizeExceededException): ResponseEntity<ErrorResponse> =
+    fun handleUploadTooLarge(): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File too large")
 
     @ExceptionHandler(Exception::class)

@@ -1,23 +1,21 @@
-﻿package com.lakshay.healthcare.user.controller
+package com.lakshay.healthcare.user.controller
 
-import com.lakshay.healthcare.user.dto.LoginRequest
-import com.lakshay.healthcare.user.dto.RefreshRequest
-import com.lakshay.healthcare.user.dto.LoginResponse
-import com.lakshay.healthcare.user.service.UserMgmtService
-import com.lakshay.healthcare.user.service.WorkerMgmtService
-import com.lakshay.healthcare.shared.entity.AdminMaster
 import com.lakshay.healthcare.shared.exception.AccountLockedException
-import com.lakshay.healthcare.shared.exception.UnauthorizedException
-import com.lakshay.healthcare.shared.security.LoginAttemptService
-import com.lakshay.healthcare.shared.security.RefreshTokenService
 import com.lakshay.healthcare.shared.repository.AdminMasterRepository
 import com.lakshay.healthcare.shared.repository.UserMasterRepository
 import com.lakshay.healthcare.shared.repository.WorkerMasterRepository
 import com.lakshay.healthcare.shared.security.JwtUtil
+import com.lakshay.healthcare.shared.security.LoginAttemptService
+import com.lakshay.healthcare.shared.security.RefreshTokenService
+import com.lakshay.healthcare.user.dto.LoginRequest
+import com.lakshay.healthcare.user.dto.RefreshRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,8 +23,6 @@ class AuthController(
     private val userRepository: UserMasterRepository,
     private val workerRepository: WorkerMasterRepository,
     private val adminRepository: AdminMasterRepository,
-    private val userService: UserMgmtService,
-    private val workerService: WorkerMgmtService,
     private val jwtUtil: JwtUtil,
     private val passwordEncoder: PasswordEncoder,
     private val loginAttemptService: LoginAttemptService,

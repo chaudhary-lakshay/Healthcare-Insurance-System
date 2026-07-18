@@ -1,6 +1,11 @@
 package com.lakshay.healthcare.shared.entity
 
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 
 // Tunable eligibility numbers per plan. Only the knobs that actually change (income limit, benefit
 // amount) live here; the rule logic and the structural thresholds (ages, etc.) stay in code. Any
