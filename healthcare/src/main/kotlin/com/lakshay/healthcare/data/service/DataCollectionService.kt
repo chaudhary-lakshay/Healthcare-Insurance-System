@@ -41,7 +41,7 @@ class DataCollectionService(
 ) {
 
     fun loadCaseNo(appId: Long): CaseResponse {
-        val citizen = citizenRepository.findByAppId(appId)
+        citizenRepository.findByAppId(appId)
             ?: throw ResourceNotFoundException("Citizen application not found for ID: $appId")
 
         if (dcCaseRepository.findByAppId(appId) != null) {

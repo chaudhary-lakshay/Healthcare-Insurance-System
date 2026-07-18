@@ -216,12 +216,12 @@ abstract class IntegrationTestBase {
         audience: String = jwtAudience,
         expiry: Date = Date(System.currentTimeMillis() + 60_000)
     ): String = Jwts.builder()
-        .setSubject(email)
+        .subject(email)
         .claim("role", role)
-        .setIssuer(issuer)
-        .setAudience(audience)
-        .setIssuedAt(Date())
-        .setExpiration(expiry)
+        .issuer(issuer)
+        .audience().add(audience).and()
+        .issuedAt(Date())
+        .expiration(expiry)
         .signWith(Keys.hmacShaKeyFor(jwtSecret.toByteArray(StandardCharsets.UTF_8)))
         .compact()
 }

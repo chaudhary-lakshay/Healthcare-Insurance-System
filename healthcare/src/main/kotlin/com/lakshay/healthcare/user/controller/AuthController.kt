@@ -42,8 +42,8 @@ class AuthController(
             throw AccountLockedException(loginAttemptService.lockoutSeconds())
         }
         return try {
-            var name = ""
-            var userType = "USER"
+            var name: String
+            var userType: String
 
             val admin = adminRepository.findByEmail(request.email)
             if (admin != null) {
