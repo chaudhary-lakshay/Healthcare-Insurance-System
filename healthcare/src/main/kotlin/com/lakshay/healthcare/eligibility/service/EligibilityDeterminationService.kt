@@ -11,6 +11,7 @@ import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.lifecycle.CaseStateMachine
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import com.lakshay.healthcare.shared.repository.*
+import com.lakshay.healthcare.shared.notification.StatusEmailService
 import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -30,7 +31,8 @@ class EligibilityDeterminationService(
     private val auditService: AuditService,
     private val planRuleRepository: PlanRuleRepository,
     private val ownershipService: OwnershipService,
-    private val householdMemberRepository: HouseholdMemberRepository
+    private val householdMemberRepository: HouseholdMemberRepository,
+    private val statusEmailService: StatusEmailService
 ) {
 
     fun determineEligibility(caseNo: Long): EligibilityResponse {
@@ -95,6 +97,17 @@ class EligibilityDeterminationService(
             "CASE_DETERMINED", "DcCase", caseNo.toString(),
             "planStatus=${output.planStatus}; applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
         )
+
+        // only on an actual status flip — re-runs are idempotent and shouldn't spam
+        if (existing?.planStatus != output.planStatus) {
+            citizen?.email?.let { email ->
+                statusEmailService.caseStatusChanged(
+                    caseNo = caseNo, recipient = email, citizenName = citizenName,
+                    status = output.planStatus ?: "UNKNOWN", planName = planName,
+                    benefitAmt = output.benefitAmt, denialReason = output.denialReason
+                )
+            }
+        }
 
         return output
     }
