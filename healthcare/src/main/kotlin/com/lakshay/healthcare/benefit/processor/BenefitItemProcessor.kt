@@ -6,7 +6,7 @@ import org.springframework.batch.item.ItemProcessor
 import org.springframework.stereotype.Component
 
 @Component
-class BenefitItemProcessor : ItemProcessor<com.lakshay.healthcare.shared.entity.EligibilityDetails, com.lakshay.healthcare.shared.entity.EligibilityDetails> {
+class BenefitItemProcessor : ItemProcessor<EligibilityDetails, EligibilityDetails> {
 
     companion object {
         private const val ACCOUNT_NUMBER_MODULUS = 100000
@@ -14,7 +14,7 @@ class BenefitItemProcessor : ItemProcessor<com.lakshay.healthcare.shared.entity.
 
     private val logger = LoggerFactory.getLogger(BenefitItemProcessor::class.java)
 
-    override fun process(item: com.lakshay.healthcare.shared.entity.EligibilityDetails): com.lakshay.healthcare.shared.entity.EligibilityDetails {
+    override fun process(item: EligibilityDetails): EligibilityDetails {
         logger.info("Processing benefit for case: ${item.caseNo}, plan: ${item.planName}")
 
         return item.copy(
