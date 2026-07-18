@@ -11,7 +11,9 @@ import com.lakshay.healthcare.user.dto.LoginResponse
 import com.lakshay.healthcare.user.dto.RegisterRequest
 import com.lakshay.healthcare.shared.exception.DuplicateResourceException
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
+import com.lakshay.healthcare.shared.exception.AccountLockedException
 import com.lakshay.healthcare.shared.exception.UnauthorizedException
+import com.lakshay.healthcare.shared.security.LoginAttemptService
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
@@ -28,7 +30,8 @@ class WorkerMgmtService(
     private val workerRepository: WorkerMasterRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtUtil: JwtUtil,
-    private val emailUtils: EmailUtils
+    private val emailUtils: EmailUtils,
+    private val loginAttemptService: LoginAttemptService
 ) {
 
     fun registerWorker(request: RegisterRequest): WorkerRegistrationResult {
@@ -86,10 +89,18 @@ class WorkerMgmtService(
     }
 
     fun loginWorker(request: LoginRequest): LoginResponse {
+        if (loginAttemptService.isLocked(request.email)) {
+            throw AccountLockedException(loginAttemptService.lockoutSeconds())
+        }
+
         val worker = workerRepository.findByEmail(request.email)
-            ?: throw UnauthorizedException("Invalid email or password")
+            ?: run {
+                loginAttemptService.recordFailure(request.email)
+                throw UnauthorizedException("Invalid email or password")
+            }
 
         if (!passwordEncoder.matches(request.password, worker.password)) {
+            loginAttemptService.recordFailure(request.email)
             throw UnauthorizedException("Invalid email or password")
         }
 
@@ -97,6 +108,7 @@ class WorkerMgmtService(
             throw UnauthorizedException("Account not activated. Please activate your account first.")
         }
 
+        loginAttemptService.recordSuccess(request.email)
         val token = jwtUtil.generateToken(worker.email, "ROLE_${worker.role}")
         return LoginResponse(
             token = token,

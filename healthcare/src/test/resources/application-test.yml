@@ -32,3 +32,10 @@ jwt:
   # Test-only secret so the suite doesn't need JWT_SECRET set. Not for prod —
   # prod has no default and must supply its own.
   secret: test-only-jwt-secret-not-for-production-use-min-256-bits-0123456789
+
+# ITs fire everything from one IP through MockMvc — real thresholds would trip
+# mid-suite. Limiting behavior itself is covered by RateLimitingTests.
+app:
+  auth-throttle:
+    ip-limit: 1000000
+    max-failures: 1000000
