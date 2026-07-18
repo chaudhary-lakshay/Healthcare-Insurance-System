@@ -24,6 +24,8 @@ class RateLimitFilter(
     companion object {
         val AUTH_PATHS = setOf(
             "/api/auth/login",
+            "/api/auth/refresh",
+            "/api/auth/logout",
             "/user-api/login",
             "/user-api/activate",
             "/worker-api/login",

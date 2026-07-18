@@ -25,12 +25,12 @@ class JwtUtil(
         val expiry = Date(now.time + expirationMs)
 
         return Jwts.builder()
-            .setSubject(email)
+            .subject(email)
             .claim("role", role)
-            .setIssuer(issuer)
-            .setAudience(audience)
-            .setIssuedAt(now)
-            .setExpiration(expiry)
+            .issuer(issuer)
+            .audience().add(audience).and()
+            .issuedAt(now)
+            .expiration(expiry)
             .signWith(getSigningKey())
             .compact()
     }
@@ -49,17 +49,18 @@ class JwtUtil(
 
     fun validateToken(token: String, email: String): Boolean {
         val claims = extractAllClaims(token)
-        val aud = claims.get("aud", String::class.java)
+        // audience is a Set in jjwt 0.12+; pre-upgrade tokens carried a plain string
+        // and the parser folds those into a singleton set, so contains() covers both
         return claims.subject == email
                 && claims.issuer == issuer
-                && aud == audience
+                && claims.audience?.contains(audience) == true
                 && !isTokenExpired(token)
     }
 
     private fun extractAllClaims(token: String): Claims =
-        Jwts.parserBuilder()
-            .setSigningKey(getSigningKey())
+        Jwts.parser()
+            .verifyWith(getSigningKey())
             .build()
-            .parseClaimsJws(token)
-            .body
+            .parseSignedClaims(token)
+            .payload
 }

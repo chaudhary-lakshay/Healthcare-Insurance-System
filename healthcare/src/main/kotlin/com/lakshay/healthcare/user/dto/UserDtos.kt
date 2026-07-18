@@ -28,5 +28,10 @@ data class LoginResponse(
     val token: String,
     val role: String,
     val userId: Long? = null,
-    val workerId: Long? = null
+    val workerId: Long? = null,
+    val refreshToken: String? = null
+)
+
+data class RefreshRequest(
+    val refreshToken: String
 )
