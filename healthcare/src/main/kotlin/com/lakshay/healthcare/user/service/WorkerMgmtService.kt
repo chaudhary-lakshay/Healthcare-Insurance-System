@@ -94,6 +94,9 @@ class WorkerMgmtService(
         return "Worker activated successfully"
     }
 
+    // ThrowsCount: distinct auth failures (locked / unknown / bad password / not activated),
+    // each its own status; folding would blur the 401 reasons.
+    @Suppress("ThrowsCount")
     fun loginWorker(request: LoginRequest): LoginResponse {
         if (loginAttemptService.isLocked(request.email)) {
             throw AccountLockedException(loginAttemptService.lockoutSeconds())

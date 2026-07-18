@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/auth")
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class AuthController(
     private val userRepository: UserMasterRepository,
     private val workerRepository: WorkerMasterRepository,
@@ -30,6 +32,10 @@ class AuthController(
 ) {
 
     @PostMapping("/login")
+    // Auth entry point: nested admin/worker/user cascade with early 401s, wrapped in a boundary
+    // catch that turns anything unexpected into a 500. Flattening into per-account-type resolvers
+    // is a sensible follow-up.
+    @Suppress("LongMethod", "NestedBlockDepth", "ReturnCount", "TooGenericExceptionCaught", "SwallowedException")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<Map<String, Any>> {
         // must stay outside the try — the catch below eats everything into a 500
         if (loginAttemptService.isLocked(request.email)) {

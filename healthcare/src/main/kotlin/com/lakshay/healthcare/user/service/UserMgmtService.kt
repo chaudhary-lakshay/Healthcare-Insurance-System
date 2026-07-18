@@ -27,6 +27,8 @@ data class RegistrationResult(
 )
 
 @Service
+// TooManyFunctions: cohesive user lifecycle (register/activate/login/CRUD) in one service.
+@Suppress("TooManyFunctions")
 class UserMgmtService(
     private val userRepository: UserMasterRepository,
     private val passwordEncoder: PasswordEncoder,
@@ -95,6 +97,9 @@ class UserMgmtService(
         return "User activated successfully"
     }
 
+    // ThrowsCount: distinct auth failures (locked / unknown / bad password / not activated),
+    // each its own status; folding would blur the 401 reasons.
+    @Suppress("ThrowsCount")
     fun loginUser(request: LoginRequest): LoginResponse {
         if (loginAttemptService.isLocked(request.email)) {
             throw AccountLockedException(loginAttemptService.lockoutSeconds())
