@@ -1,8 +1,13 @@
 ﻿package com.lakshay.healthcare.shared.entity
 
 import jakarta.persistence.*
+import org.hibernate.envers.Audited
+import org.hibernate.envers.NotAudited
 import java.time.LocalDate
 
+// Audited, but SSN and bank details are @NotAudited — an immutable _AUD copy of those
+// would be impossible to erase later.
+@Audited
 @Entity
 @Table(name = "ELIGIBILITY_DETERMINATION")
 data class EligibilityDetails(
@@ -14,6 +19,7 @@ data class EligibilityDetails(
     val caseNo: Long,
     @Column(name = "holder_name")
     val holderName: String? = null,
+    @NotAudited
     @Column(name = "holder_ssn")
     val holderSSN: Long? = null,
     @Column(name = "plan_name")
@@ -28,8 +34,10 @@ data class EligibilityDetails(
     val benefitAmt: Double? = null,
     @Column(name = "denial_reason")
     val denialReason: String? = null,
+    @NotAudited
     @Column(name = "bank_name")
     val bankName: String? = null,
+    @NotAudited
     @Column(name = "account_number")
     val accountNumber: String? = null
 )
