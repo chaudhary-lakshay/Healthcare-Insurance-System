@@ -10,5 +10,5 @@ class HealthcareApplication
 // and this runs once at startup so the array copy is irrelevant.
 @Suppress("SpreadOperator")
 fun main(args: Array<String>) {
-	runApplication<HealthcareApplication>(*args)
+    runApplication<HealthcareApplication>(*args)
 }

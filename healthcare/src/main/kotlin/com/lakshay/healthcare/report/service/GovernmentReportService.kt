@@ -11,7 +11,6 @@ import com.lakshay.healthcare.shared.repository.PlanRepository
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Service
 import org.springframework.util.FileCopyUtils
-import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
@@ -45,7 +44,7 @@ class GovernmentReportService(
             reportFormat = request.reportFormat,
             reportStatus = "GENERATED",
             reportDescription = "Government report for ${request.periodCovered ?: "current period"}",
-            reportFilePath = "reports/government/${reportName}.${request.reportFormat.lowercase()}",
+            reportFilePath = "reports/government/$reportName.${request.reportFormat.lowercase()}",
             generatedFor = request.generatedFor ?: "Department of Health",
             departmentName = request.departmentName ?: "Health Insurance Department",
             periodCovered = request.periodCovered ?: LocalDate.now().month.toString(),
@@ -119,7 +118,7 @@ class GovernmentReportService(
             appendLine("Type: ${request.reportType}")
             appendLine("Period: ${request.periodCovered ?: "Current"}")
             appendLine("Generated: ${LocalDate.now()}")
-            appendLine("=" .repeat(SEPARATOR_LENGTH))
+            appendLine("=".repeat(SEPARATOR_LENGTH))
             appendLine()
             appendLine("APPLICATION STATISTICS")
             appendLine("Total Applications: $totalApplications")
@@ -138,7 +137,7 @@ class GovernmentReportService(
             appendLine("BENEFIT STATISTICS")
             appendLine("Total Eligible Citizens: $approvedCount")
             appendLine("Total Denied: $deniedCount")
-            appendLine("=" .repeat(SEPARATOR_LENGTH))
+            appendLine("=".repeat(SEPARATOR_LENGTH))
             appendLine("End of Report")
         }
     }

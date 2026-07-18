@@ -30,7 +30,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class GoldenLifecycleIT : IntegrationTestBase() {
 
     @Autowired lateinit var citizenRepository: CitizenAppRegistrationRepository
+
     @Autowired lateinit var eligibilityRepository: EligibilityDetailsRepository
+
     @Autowired lateinit var coTriggerRepository: CoTriggerRepository
 
     @Test
@@ -109,7 +111,7 @@ class GoldenLifecycleIT : IntegrationTestBase() {
 
         val trigger = coTriggerRepository.findByCaseNo(caseNo)
         assertThat(trigger).isNotNull
-        assertThat(trigger!!.triggerStatus).isEqualTo("PENDING")  // couples to correspondence
+        assertThat(trigger!!.triggerStatus).isEqualTo("PENDING") // couples to correspondence
 
         // correspondence: consume PENDING trigger, email citizen, mark PROCESSED
         mockMvc.perform(
@@ -130,7 +132,7 @@ class GoldenLifecycleIT : IntegrationTestBase() {
 
         val processedTrigger = coTriggerRepository.findByCaseNo(caseNo)
         assertThat(processedTrigger!!.triggerStatus).isEqualTo("PROCESSED")
-        assertThat(processedTrigger.coNoticePdf).isNotNull  // PDF persisted
+        assertThat(processedTrigger.coNoticePdf).isNotNull // PDF persisted
 
         // benefit batch: APPROVED rows -> CSV
         mockMvc.perform(
@@ -143,9 +145,9 @@ class GoldenLifecycleIT : IntegrationTestBase() {
 
         assertThat(BENEFIT_OUTPUT_FILE).exists()
         val csv = BENEFIT_OUTPUT_FILE.readText()
-        assertThat(csv).contains("Case No,Holder Name,SSN")  // header
+        assertThat(csv).contains("Case No,Holder Name,SSN") // header
         assertThat(csv).contains(caseNo.toString())
-        assertThat(csv).contains("ISH-Bank")                 // processor-assigned bank
+        assertThat(csv).contains("ISH-Bank") // processor-assigned bank
 
         // govt report: 1 app, 1 approved, 0 denied
         mockMvc.perform(

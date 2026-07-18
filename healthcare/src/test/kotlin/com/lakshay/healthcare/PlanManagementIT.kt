@@ -38,9 +38,15 @@ class PlanManagementIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/plan-api/register").header(HttpHeaders.AUTHORIZATION, adminAuth())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(PlanRequest(
-                    planName = "NEWPLAN", description = "A new plan", categoryId = seededCategoryId
-                )))
+                .content(
+                    json(
+                        PlanRequest(
+                            planName = "NEWPLAN",
+                            description = "A new plan",
+                            categoryId = seededCategoryId
+                        )
+                    )
+                )
         )
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.message", containsString("registered successfully")))

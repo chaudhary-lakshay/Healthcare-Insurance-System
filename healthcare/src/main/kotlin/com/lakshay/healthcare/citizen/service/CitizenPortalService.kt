@@ -16,8 +16,8 @@ import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.exception.ValidationException
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
-import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
 import com.lakshay.healthcare.shared.repository.DocumentRepository
+import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
 import com.lakshay.healthcare.shared.repository.NoticeRepository
 import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.security.core.context.SecurityContextHolder
@@ -62,8 +62,12 @@ class CitizenPortalService(
         val email = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
         val saved = documentRepository.save(
             Document(
-                caseNo = caseNo, uploadedBy = email, docType = docType.uppercase(),
-                fileName = file.originalFilename, contentType = file.contentType, content = file.bytes
+                caseNo = caseNo,
+                uploadedBy = email,
+                docType = docType.uppercase(),
+                fileName = file.originalFilename,
+                contentType = file.contentType,
+                content = file.bytes
             )
         )
         auditService.record("DOCUMENT_UPLOADED", "Document", saved.docId.toString(), "type=${docType.uppercase()}")
@@ -72,13 +76,19 @@ class CitizenPortalService(
         if (openRfis.isNotEmpty()) {
             openRfis.forEach { noticeRepository.save(it.copy(status = "RESOLVED")) }
             auditService.record(
-                "RFI_RESOLVED", "DcCase", caseNo.toString(),
+                "RFI_RESOLVED",
+                "DcCase",
+                caseNo.toString(),
                 "resolvedBy=docUpload count=${openRfis.size}"
             )
         }
         return DocumentResponse(
-            saved.docId, saved.docType, saved.fileName,
-            saved.contentType, saved.status, saved.createdAt.toString()
+            saved.docId,
+            saved.docType,
+            saved.fileName,
+            saved.contentType,
+            saved.status,
+            saved.createdAt.toString()
         )
     }
 
@@ -154,8 +164,13 @@ class CitizenPortalService(
         auditService.record("NOTICE_INBOX_VIEWED", "Notice", null, "own inbox")
         return noticeRepository.findByRecipientOrderByCreatedAtDesc(email).map {
             NoticeResponse(
-                it.noticeId, it.noticeType, it.subject, it.body,
-                it.status, it.createdAt.toString(), it.caseNo
+                it.noticeId,
+                it.noticeType,
+                it.subject,
+                it.body,
+                it.status,
+                it.createdAt.toString(),
+                it.caseNo
             )
         }
     }
@@ -168,8 +183,12 @@ class CitizenPortalService(
         if (!request.attested) throw ValidationException("attestation is required to submit an application")
         val reg = applicationService.registerCitizen(
             CitizenRegistrationRequest(
-                fullName = request.fullName, email = email, gender = request.gender,
-                phoneNo = request.phoneNo, ssn = request.ssn, dob = request.dob
+                fullName = request.fullName,
+                email = email,
+                gender = request.gender,
+                phoneNo = request.phoneNo,
+                ssn = request.ssn,
+                dob = request.dob
             )
         )
         val caseNo = dcCaseRepository.save(DcCase(appId = reg.appId)).caseNo

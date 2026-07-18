@@ -33,8 +33,11 @@ import java.time.LocalDate
 class CorrespondenceIT : IntegrationTestBase() {
 
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired private lateinit var eligibilityRepository: EligibilityDetailsRepository
+
     @Autowired private lateinit var coTriggerRepository: CoTriggerRepository
 
     /** Seed citizen -> case -> approved eligibility, returning the case number. */
@@ -44,15 +47,23 @@ class CorrespondenceIT : IntegrationTestBase() {
     ): Long {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "Jane Doe", email = email, gender = "F",
-                ssn = ssn, stateName = "California", dob = LocalDate.of(1990, 1, 1)
+                fullName = "Jane Doe",
+                email = email,
+                gender = "F",
+                ssn = ssn,
+                stateName = "California",
+                dob = LocalDate.of(1990, 1, 1)
             )
         )
         val case = dcCaseRepo.save(DcCase(appId = app.appId, planId = planId("SNAP")))
         eligibilityRepository.save(
             EligibilityDetails(
-                caseNo = case.caseNo, holderName = "Jane Doe", holderSSN = ssn,
-                planName = "SNAP", planStatus = "APPROVED", benefitAmt = 200.0
+                caseNo = case.caseNo,
+                holderName = "Jane Doe",
+                holderSSN = ssn,
+                planName = "SNAP",
+                planStatus = "APPROVED",
+                benefitAmt = 200.0
             )
         )
         return case.caseNo

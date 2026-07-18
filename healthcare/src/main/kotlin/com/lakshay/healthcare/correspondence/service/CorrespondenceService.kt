@@ -3,11 +3,11 @@
 import com.lakshay.healthcare.correspondence.dto.TriggerResponse
 import com.lakshay.healthcare.shared.entity.CoTrigger
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
+import com.lakshay.healthcare.shared.notification.NotificationService
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.CoTriggerRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
 import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
-import com.lakshay.healthcare.shared.notification.NotificationService
 import com.lakshay.healthcare.shared.util.EmailUtils
 import com.lowagie.text.Document
 import com.lowagie.text.FontFactory

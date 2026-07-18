@@ -20,17 +20,25 @@ import org.springframework.beans.factory.annotation.Autowired
 class StatusEmailIT : IntegrationTestBase() {
 
     @Autowired lateinit var eligibilityService: EligibilityDeterminationService
+
     @Autowired lateinit var caseworkService: CaseworkService
+
     @Autowired lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired lateinit var dcIncomeRepo: DcIncomeRepository
+
     @Autowired lateinit var noticeRepository: NoticeRepository
 
     private fun seedCase(empIncome: Double): Long {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "Jane Doe", email = "jane@ish.test", gender = "F",
-                ssn = 123456704L, stateName = "California"
+                fullName = "Jane Doe",
+                email = "jane@ish.test",
+                gender = "F",
+                ssn = 123456704L,
+                stateName = "California"
             )
         )
         val case = dcCaseRepo.save(DcCase(appId = app.appId, planId = planId("SNAP")))

@@ -44,14 +44,23 @@ import java.time.LocalDate
 class EligibilityMatrixIT : IntegrationTestBase() {
 
     @Autowired private lateinit var eligibilityService: EligibilityDeterminationService
+
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
+
     @Autowired private lateinit var dcIncomeRepo: DcIncomeRepository
+
     @Autowired private lateinit var dcEducationRepo: DcEducationRepository
+
     @Autowired private lateinit var dcChildrenRepo: DcChildrenRepository
+
     @Autowired private lateinit var eligibilityRepository: EligibilityDetailsRepository
+
     @Autowired private lateinit var coTriggerRepository: CoTriggerRepository
+
     @Autowired private lateinit var planRuleRepository: com.lakshay.healthcare.shared.repository.PlanRuleRepository
+
     @Autowired
     private lateinit var householdMemberRepository: com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
 
@@ -172,8 +181,11 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     fun `ELIG-MATRIX case with no plan selected throws`() {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "No Plan", email = "noplan@ish.test", gender = "M",
-                ssn = 111111111L, stateName = "California"
+                fullName = "No Plan",
+                email = "noplan@ish.test",
+                gender = "M",
+                ssn = 111111111L,
+                stateName = "California"
             )
         )
         val caseNo = dcCaseRepo.save(DcCase(appId = app.appId, planId = null)).caseNo
@@ -188,8 +200,11 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     fun `ELIG-MATRIX case referencing a missing plan throws`() {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "Bad Plan", email = "badplan@ish.test", gender = "M",
-                ssn = 222222222L, stateName = "California"
+                fullName = "Bad Plan",
+                email = "badplan@ish.test",
+                gender = "M",
+                ssn = 222222222L,
+                stateName = "California"
             )
         )
         val caseNo = dcCaseRepo.save(DcCase(appId = app.appId, planId = 888_888L)).caseNo
@@ -204,8 +219,11 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     fun `ELIG-MATRIX case with no income data throws`() {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "No Income", email = "noincome@ish.test", gender = "F",
-                ssn = 333333333L, stateName = "California"
+                fullName = "No Income",
+                email = "noincome@ish.test",
+                gender = "F",
+                ssn = 333333333L,
+                stateName = "California"
             )
         )
         val caseNo = dcCaseRepo.save(DcCase(appId = app.appId, planId = planId("SNAP"))).caseNo
@@ -245,7 +263,9 @@ class EligibilityMatrixIT : IntegrationTestBase() {
         val caseNo = seedCase(planName = "SNAP", empIncome = 250.0)
         householdMemberRepository.save(
             com.lakshay.healthcare.shared.entity.HouseholdMember(
-                caseNo = caseNo, relationship = "SPOUSE", memberIncome = 100.0
+                caseNo = caseNo,
+                relationship = "SPOUSE",
+                memberIncome = 100.0
             )
         )
         val result = eligibilityService.determineEligibility(caseNo)
@@ -272,61 +292,170 @@ class EligibilityMatrixIT : IntegrationTestBase() {
     companion object {
         const val FALLBACK_PLAN = "OTHER"
 
+        // LongMethod: test data table — one Row per rule branch, one-arg-per-line after ktlint wrapping.
+        @Suppress("LongMethod")
         @JvmStatic
         fun matrixRows(): List<Arguments> = listOf(
             // SNAP: empIncome < 300
-            Row("SNAP approved (income 100)", "SNAP", empIncome = 100.0,
-                expectedStatus = "APPROVED", expectedBenefit = 200.0),
-            Row("SNAP denied (income 500)", "SNAP", empIncome = 500.0,
-                expectedStatus = "DENIED", expectedDenial = "High Income"),
-            Row("SNAP boundary income==300 is denied", "SNAP", empIncome = 300.0,
-                expectedStatus = "DENIED", expectedDenial = "High Income"),
+            Row(
+                "SNAP approved (income 100)",
+                "SNAP",
+                empIncome = 100.0,
+                expectedStatus = "APPROVED",
+                expectedBenefit = 200.0
+            ),
+            Row(
+                "SNAP denied (income 500)",
+                "SNAP",
+                empIncome = 500.0,
+                expectedStatus = "DENIED",
+                expectedDenial = "High Income"
+            ),
+            Row(
+                "SNAP boundary income==300 is denied",
+                "SNAP",
+                empIncome = 300.0,
+                expectedStatus = "DENIED",
+                expectedDenial = "High Income"
+            ),
 
             // CCAP: income < 300 && has kids && all kids age <= 16
-            Row("CCAP approved (income 100, one kid age 5)", "CCAP", empIncome = 100.0, childAges = listOf(5),
-                expectedStatus = "APPROVED", expectedBenefit = 300.0),
-            Row("CCAP denied (no children)", "CCAP", empIncome = 100.0,
-                expectedStatus = "DENIED", expectedDenial = "CCAP rules are not satisfied"),
-            Row("CCAP denied (a kid over 16)", "CCAP", empIncome = 100.0, childAges = listOf(17),
-                expectedStatus = "DENIED", expectedDenial = "CCAP rules are not satisfied"),
-            Row("CCAP boundary kid age==16 approved", "CCAP", empIncome = 100.0, childAges = listOf(16),
-                expectedStatus = "APPROVED", expectedBenefit = 300.0),
+            Row(
+                "CCAP approved (income 100, one kid age 5)",
+                "CCAP",
+                empIncome = 100.0,
+                childAges = listOf(5),
+                expectedStatus = "APPROVED",
+                expectedBenefit = 300.0
+            ),
+            Row(
+                "CCAP denied (no children)",
+                "CCAP",
+                empIncome = 100.0,
+                expectedStatus = "DENIED",
+                expectedDenial = "CCAP rules are not satisfied"
+            ),
+            Row(
+                "CCAP denied (a kid over 16)",
+                "CCAP",
+                empIncome = 100.0,
+                childAges = listOf(17),
+                expectedStatus = "DENIED",
+                expectedDenial = "CCAP rules are not satisfied"
+            ),
+            Row(
+                "CCAP boundary kid age==16 approved",
+                "CCAP",
+                empIncome = 100.0,
+                childAges = listOf(16),
+                expectedStatus = "APPROVED",
+                expectedBenefit = 300.0
+            ),
 
             // MEDCARE: age >= 65
-            Row("MEDCARE approved (age 70)", "MEDCARE", age = 70,
-                expectedStatus = "APPROVED", expectedBenefit = 350.0),
-            Row("MEDCARE denied (age 40)", "MEDCARE", age = 40,
-                expectedStatus = "DENIED", expectedDenial = "MEDCARE rules are not satisfied"),
-            Row("MEDCARE boundary age==65 approved", "MEDCARE", age = 65,
-                expectedStatus = "APPROVED", expectedBenefit = 350.0),
+            Row(
+                "MEDCARE approved (age 70)",
+                "MEDCARE",
+                age = 70,
+                expectedStatus = "APPROVED",
+                expectedBenefit = 350.0
+            ),
+            Row(
+                "MEDCARE denied (age 40)",
+                "MEDCARE",
+                age = 40,
+                expectedStatus = "DENIED",
+                expectedDenial = "MEDCARE rules are not satisfied"
+            ),
+            Row(
+                "MEDCARE boundary age==65 approved",
+                "MEDCARE",
+                age = 65,
+                expectedStatus = "APPROVED",
+                expectedBenefit = 350.0
+            ),
 
             // MEDAID: income < 300 && propertyIncome == 0
-            Row("MEDAID approved (income 100, no property)", "MEDAID", empIncome = 100.0, propertyIncome = 0.0,
-                expectedStatus = "APPROVED", expectedBenefit = 200.0),
-            Row("MEDAID denied (has property income)", "MEDAID", empIncome = 100.0, propertyIncome = 50.0,
-                expectedStatus = "DENIED", expectedDenial = "MEDAID rules are not satisfied"),
+            Row(
+                "MEDAID approved (income 100, no property)",
+                "MEDAID",
+                empIncome = 100.0,
+                propertyIncome = 0.0,
+                expectedStatus = "APPROVED",
+                expectedBenefit = 200.0
+            ),
+            Row(
+                "MEDAID denied (has property income)",
+                "MEDAID",
+                empIncome = 100.0,
+                propertyIncome = 50.0,
+                expectedStatus = "DENIED",
+                expectedDenial = "MEDAID rules are not satisfied"
+            ),
 
             // CAJW: empIncome == 0 && passOutYear <= thisYear
-            Row("CAJW approved (no income, passed out)", "CAJW", empIncome = 0.0, passOutYear = 2020,
-                expectedStatus = "APPROVED", expectedBenefit = 300.0),
-            Row("CAJW denied (has income)", "CAJW", empIncome = 10.0, passOutYear = 2020,
-                expectedStatus = "DENIED", expectedDenial = "CAJW rules are not satisfied"),
-            Row("CAJW denied (no education record)", "CAJW", empIncome = 0.0,
-                expectedStatus = "DENIED", expectedDenial = "CAJW rules are not satisfied"),
+            Row(
+                "CAJW approved (no income, passed out)",
+                "CAJW",
+                empIncome = 0.0,
+                passOutYear = 2020,
+                expectedStatus = "APPROVED",
+                expectedBenefit = 300.0
+            ),
+            Row(
+                "CAJW denied (has income)",
+                "CAJW",
+                empIncome = 10.0,
+                passOutYear = 2020,
+                expectedStatus = "DENIED",
+                expectedDenial = "CAJW rules are not satisfied"
+            ),
+            Row(
+                "CAJW denied (no education record)",
+                "CAJW",
+                empIncome = 0.0,
+                expectedStatus = "DENIED",
+                expectedDenial = "CAJW rules are not satisfied"
+            ),
 
             // QHP: age >= 25, approval carries no benefit amount
-            Row("QHP approved (age 30, no benefit amount)", "QHP", age = 30,
-                expectedStatus = "APPROVED", expectedBenefit = null),
-            Row("QHP denied (age 20)", "QHP", age = 20,
-                expectedStatus = "DENIED", expectedDenial = "QHP rules are not satisfied"),
-            Row("QHP boundary age==25 approved", "QHP", age = 25,
-                expectedStatus = "APPROVED", expectedBenefit = null),
+            Row(
+                "QHP approved (age 30, no benefit amount)",
+                "QHP",
+                age = 30,
+                expectedStatus = "APPROVED",
+                expectedBenefit = null
+            ),
+            Row(
+                "QHP denied (age 20)",
+                "QHP",
+                age = 20,
+                expectedStatus = "DENIED",
+                expectedDenial = "QHP rules are not satisfied"
+            ),
+            Row(
+                "QHP boundary age==25 approved",
+                "QHP",
+                age = 25,
+                expectedStatus = "APPROVED",
+                expectedBenefit = null
+            ),
 
             // Fallback else-branch: total income < 10000 -> 10% benefit
-            Row("OTHER approved (income 5000 -> 10% = 500)", FALLBACK_PLAN, empIncome = 5000.0,
-                expectedStatus = "APPROVED", expectedBenefit = 500.0),
-            Row("OTHER denied (income 20000)", FALLBACK_PLAN, empIncome = 20000.0,
-                expectedStatus = "DENIED", expectedDenial = "Eligibility rules not satisfied for OTHER")
+            Row(
+                "OTHER approved (income 5000 -> 10% = 500)",
+                FALLBACK_PLAN,
+                empIncome = 5000.0,
+                expectedStatus = "APPROVED",
+                expectedBenefit = 500.0
+            ),
+            Row(
+                "OTHER denied (income 20000)",
+                FALLBACK_PLAN,
+                empIncome = 20000.0,
+                expectedStatus = "DENIED",
+                expectedDenial = "Eligibility rules not satisfied for OTHER"
+            )
         ).map { Arguments.of(it) }
     }
 }

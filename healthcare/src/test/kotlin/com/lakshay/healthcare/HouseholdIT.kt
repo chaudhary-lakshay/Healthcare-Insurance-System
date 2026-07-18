@@ -18,13 +18,17 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class HouseholdIT : IntegrationTestBase() {
 
     @Autowired private lateinit var citizenRepo: CitizenAppRegistrationRepository
+
     @Autowired private lateinit var dcCaseRepo: DcCaseRepository
 
     private fun seedCase(): Long {
         val app = citizenRepo.save(
             CitizenAppRegistration(
-                fullName = "Jane Doe", email = "citizen@ish.test", gender = "F",
-                ssn = 123456704L, stateName = "California"
+                fullName = "Jane Doe",
+                email = "citizen@ish.test",
+                gender = "F",
+                ssn = 123456704L,
+                stateName = "California"
             )
         )
         return dcCaseRepo.save(DcCase(appId = app.appId)).caseNo
@@ -37,12 +41,17 @@ class HouseholdIT : IntegrationTestBase() {
         mockMvc.perform(
             post("/dc-api/saveHouseholdMember").header(HttpHeaders.AUTHORIZATION, adminAuth())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(
-                    HouseholdMemberRequest(
-                        caseNo = caseNo, fullName = "John Doe", relationship = "SPOUSE",
-                        dob = "1988-05-01", memberIncome = 0.0
+                .content(
+                    json(
+                        HouseholdMemberRequest(
+                            caseNo = caseNo,
+                            fullName = "John Doe",
+                            relationship = "SPOUSE",
+                            dob = "1988-05-01",
+                            memberIncome = 0.0
+                        )
                     )
-                ))
+                )
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.memberId").isNumber)

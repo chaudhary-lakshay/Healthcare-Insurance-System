@@ -28,16 +28,23 @@ class BenefitIssuanceIT : IntegrationTestBase() {
     private fun approved(caseNo: Long, ssn: Long = 123456704L): EligibilityDetails =
         eligibilityRepository.save(
             EligibilityDetails(
-                caseNo = caseNo, holderName = "Jane Doe", holderSSN = ssn,
-                planName = "SNAP", planStatus = "APPROVED", benefitAmt = 200.0
+                caseNo = caseNo,
+                holderName = "Jane Doe",
+                holderSSN = ssn,
+                planName = "SNAP",
+                planStatus = "APPROVED",
+                benefitAmt = 200.0
             )
         )
 
     private fun denied(caseNo: Long): EligibilityDetails =
         eligibilityRepository.save(
             EligibilityDetails(
-                caseNo = caseNo, holderName = "Bob Roe", planName = "SNAP",
-                planStatus = "DENIED", denialReason = "High Income"
+                caseNo = caseNo,
+                holderName = "Bob Roe",
+                planName = "SNAP",
+                planStatus = "DENIED",
+                denialReason = "High Income"
             )
         )
 

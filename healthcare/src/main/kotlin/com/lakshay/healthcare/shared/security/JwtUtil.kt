@@ -51,10 +51,10 @@ class JwtUtil(
         val claims = extractAllClaims(token)
         // audience is a Set in jjwt 0.12+; pre-upgrade tokens carried a plain string
         // and the parser folds those into a singleton set, so contains() covers both
-        return claims.subject == email
-                && claims.issuer == issuer
-                && claims.audience?.contains(audience) == true
-                && !isTokenExpired(token)
+        return claims.subject == email &&
+            claims.issuer == issuer &&
+            claims.audience?.contains(audience) == true &&
+            !isTokenExpired(token)
     }
 
     private fun extractAllClaims(token: String): Claims =

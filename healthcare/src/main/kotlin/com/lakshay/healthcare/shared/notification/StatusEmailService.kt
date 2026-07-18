@@ -32,21 +32,35 @@ class StatusEmailService(
             else -> "Case update - Case #$caseNo"
         }
         send(
-            caseNo, recipient, "STATUS_CHANGE", subject,
+            caseNo,
+            recipient,
+            "STATUS_CHANGE",
+            subject,
             mapOf(
-                "citizenName" to citizenName, "caseNo" to caseNo, "status" to status,
-                "planName" to planName, "benefitAmt" to benefitAmt,
-                "denialReason" to denialReason, "message" to null
+                "citizenName" to citizenName,
+                "caseNo" to caseNo,
+                "status" to status,
+                "planName" to planName,
+                "benefitAmt" to benefitAmt,
+                "denialReason" to denialReason,
+                "message" to null
             )
         )
     }
 
     fun rfiOpened(caseNo: Long, recipient: String, citizenName: String, message: String) {
         send(
-            caseNo, recipient, "RFI", "Information requested - Case #$caseNo",
+            caseNo,
+            recipient,
+            "RFI",
+            "Information requested - Case #$caseNo",
             mapOf(
-                "citizenName" to citizenName, "caseNo" to caseNo, "status" to "RFI",
-                "planName" to null, "benefitAmt" to null, "denialReason" to null,
+                "citizenName" to citizenName,
+                "caseNo" to caseNo,
+                "status" to "RFI",
+                "planName" to null,
+                "benefitAmt" to null,
+                "denialReason" to null,
                 "message" to message
             )
         )

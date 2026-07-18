@@ -53,8 +53,13 @@ class BatchConfig {
         // mask at extraction — SSN never leaves the app in full
         lineAggregator.setFieldExtractor { e ->
             arrayOf(
-                e.caseNo, e.holderName, maskSsnLast4(e.holderSSN),
-                e.planName, e.benefitAmt, e.bankName, e.accountNumber
+                e.caseNo,
+                e.holderName,
+                maskSsnLast4(e.holderSSN),
+                e.planName,
+                e.benefitAmt,
+                e.bankName,
+                e.accountNumber
             )
         }
 

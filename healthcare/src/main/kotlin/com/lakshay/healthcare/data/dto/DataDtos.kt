@@ -1,6 +1,4 @@
-﻿package com.lakshay.healthcare.data.dto
-
-data class IncomeRequest(
+﻿package com.lakshay.healthcare.data.dto data class IncomeRequest(
     val caseNo: Long,
     val empIncome: Double? = null,
     val propertyIncome: Double? = null

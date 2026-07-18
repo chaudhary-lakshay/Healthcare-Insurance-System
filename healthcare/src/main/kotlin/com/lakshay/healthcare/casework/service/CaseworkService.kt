@@ -1,12 +1,12 @@
 package com.lakshay.healthcare.casework.service
 
 import com.lakshay.healthcare.casework.dto.AssignmentRequest
-import com.lakshay.healthcare.casework.dto.DocumentReviewRequest
-import com.lakshay.healthcare.casework.dto.DocumentReviewResponse
-import com.lakshay.healthcare.casework.dto.DocumentSummaryResponse
 import com.lakshay.healthcare.casework.dto.AssignmentResponse
 import com.lakshay.healthcare.casework.dto.CaseNoteRequest
 import com.lakshay.healthcare.casework.dto.CaseNoteResponse
+import com.lakshay.healthcare.casework.dto.DocumentReviewRequest
+import com.lakshay.healthcare.casework.dto.DocumentReviewResponse
+import com.lakshay.healthcare.casework.dto.DocumentSummaryResponse
 import com.lakshay.healthcare.casework.dto.QueueItemResponse
 import com.lakshay.healthcare.casework.dto.RfiRequest
 import com.lakshay.healthcare.casework.dto.RfiResponse
@@ -64,8 +64,11 @@ class CaseworkService(
         val citizenEmail = citizen.email
         val author = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
         val notice = notificationService.notifyPortal(
-            caseNo = caseNo, recipient = citizenEmail, noticeType = "RFI",
-            subject = "Information requested - Case #$caseNo", body = request.message
+            caseNo = caseNo,
+            recipient = citizenEmail,
+            noticeType = "RFI",
+            subject = "Information requested - Case #$caseNo",
+            body = request.message
         )
         caseNoteRepository.save(CaseNote(caseNo = caseNo, author = author, body = "RFI: ${request.message}"))
         auditService.record("RFI_SENT", "DcCase", caseNo.toString())
@@ -76,8 +79,12 @@ class CaseworkService(
     fun listDocuments(caseNo: Long): List<DocumentSummaryResponse> =
         documentRepository.findByCaseNo(caseNo).map {
             DocumentSummaryResponse(
-                it.docId, it.docType, it.fileName,
-                it.contentType, it.status, it.createdAt.toString()
+                it.docId,
+                it.docType,
+                it.fileName,
+                it.contentType,
+                it.status,
+                it.createdAt.toString()
             )
         }
 

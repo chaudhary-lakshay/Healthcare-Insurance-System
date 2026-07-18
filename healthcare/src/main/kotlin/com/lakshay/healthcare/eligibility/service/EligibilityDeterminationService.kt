@@ -3,15 +3,16 @@
 import com.lakshay.healthcare.eligibility.dto.EligibilityResponse
 import com.lakshay.healthcare.eligibility.dto.ProgramResult
 import com.lakshay.healthcare.eligibility.dto.ScreeningResponse
+import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.entity.CoTrigger
 import com.lakshay.healthcare.shared.entity.DcChildren
 import com.lakshay.healthcare.shared.entity.DcEducation
 import com.lakshay.healthcare.shared.entity.DcIncome
 import com.lakshay.healthcare.shared.entity.EligibilityDetails
 import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
-import com.lakshay.healthcare.shared.audit.AuditService
 import com.lakshay.healthcare.shared.lifecycle.CaseStateMachine
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
+import com.lakshay.healthcare.shared.notification.StatusEmailService
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
 import com.lakshay.healthcare.shared.repository.CoTriggerRepository
 import com.lakshay.healthcare.shared.repository.DcCaseRepository
@@ -22,7 +23,6 @@ import com.lakshay.healthcare.shared.repository.EligibilityDetailsRepository
 import com.lakshay.healthcare.shared.repository.HouseholdMemberRepository
 import com.lakshay.healthcare.shared.repository.PlanRepository
 import com.lakshay.healthcare.shared.repository.PlanRuleRepository
-import com.lakshay.healthcare.shared.notification.StatusEmailService
 import com.lakshay.healthcare.shared.security.OwnershipService
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -121,7 +121,9 @@ class EligibilityDeterminationService(
         // case went through eligibility -> mark DETERMINED (idempotent on re-run)
         dcCaseRepository.save(caseStateMachine.transition(dcCase, CaseStatus.DETERMINED))
         auditService.record(
-            "CASE_DETERMINED", "DcCase", caseNo.toString(),
+            "CASE_DETERMINED",
+            "DcCase",
+            caseNo.toString(),
             "planStatus=${output.planStatus}; " +
                 "applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
         )
@@ -130,9 +132,13 @@ class EligibilityDeterminationService(
         if (existing?.planStatus != output.planStatus) {
             citizen?.email?.let { email ->
                 statusEmailService.caseStatusChanged(
-                    caseNo = caseNo, recipient = email, citizenName = citizenName,
-                    status = output.planStatus ?: "UNKNOWN", planName = planName,
-                    benefitAmt = output.benefitAmt, denialReason = output.denialReason
+                    caseNo = caseNo,
+                    recipient = email,
+                    citizenName = citizenName,
+                    status = output.planStatus ?: "UNKNOWN",
+                    planName = planName,
+                    benefitAmt = output.benefitAmt,
+                    denialReason = output.denialReason
                 )
             }
         }

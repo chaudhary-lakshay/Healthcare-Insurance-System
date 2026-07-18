@@ -1,6 +1,4 @@
-﻿package com.lakshay.healthcare.data.controller
-
-import com.lakshay.healthcare.data.dto.CaseResponse
+﻿package com.lakshay.healthcare.data.controller import com.lakshay.healthcare.data.dto.CaseResponse
 import com.lakshay.healthcare.data.dto.ChildrenRequest
 import com.lakshay.healthcare.data.dto.DcSummaryResponse
 import com.lakshay.healthcare.data.dto.EducationRequest

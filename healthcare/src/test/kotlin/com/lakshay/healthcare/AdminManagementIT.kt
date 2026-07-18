@@ -1,8 +1,8 @@
 package com.lakshay.healthcare
 
 import com.lakshay.healthcare.admin.dto.WorkerDataResponse
-import com.lakshay.healthcare.user.dto.RegisterRequest
 import com.lakshay.healthcare.support.IntegrationTestBase
+import com.lakshay.healthcare.user.dto.RegisterRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
@@ -82,8 +82,11 @@ class AdminManagementIT : IntegrationTestBase() {
                 .content(
                     json(
                         RegisterRequest(
-                            name = "Wendy Worker", password = "ignored", email = "wendy@ish.test",
-                            gender = "F", designation = "Caseworker"
+                            name = "Wendy Worker",
+                            password = "ignored",
+                            email = "wendy@ish.test",
+                            gender = "F",
+                            designation = "Caseworker"
                         )
                     )
                 )
