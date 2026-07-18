@@ -36,7 +36,8 @@ class GovernmentReportService(
 
         val reportContent = buildReportContent(request, totalApplications, approvedCount, deniedCount, totalPlans)
 
-        val reportName = "${request.reportType}_${request.periodCovered ?: LocalDate.now().month}_${System.currentTimeMillis()}"
+        val reportName =
+            "${request.reportType}_${request.periodCovered ?: LocalDate.now().month}_${System.currentTimeMillis()}"
 
         val report = GovernmentReport(
             reportName = reportName,
@@ -96,7 +97,11 @@ class GovernmentReportService(
             else -> "text/plain"
         }
         response.contentType = contentType
-        response.setHeader("Content-Disposition", "attachment; filename=\"${report.reportName}.${(report.reportFormat ?: "txt").lowercase()}\"")
+        val ext = (report.reportFormat ?: "txt").lowercase()
+        response.setHeader(
+            "Content-Disposition",
+            "attachment; filename=\"${report.reportName}.$ext\""
+        )
 
         val content = report.reportContent?.toByteArray(StandardCharsets.UTF_8) ?: ByteArray(0)
         FileCopyUtils.copy(content, response.outputStream)
@@ -120,7 +125,12 @@ class GovernmentReportService(
             appendLine("Total Applications: $totalApplications")
             appendLine("Approved: $approvedCount")
             appendLine("Denied: $deniedCount")
-            appendLine("Approval Rate: ${if (totalApplications > 0) "%.1f".format(approvedCount.toDouble() / totalApplications * PERCENTAGE_MULTIPLIER) else "0"}%")
+            val approvalRate = if (totalApplications > 0) {
+                "%.1f".format(approvedCount.toDouble() / totalApplications * PERCENTAGE_MULTIPLIER)
+            } else {
+                "0"
+            }
+            appendLine("Approval Rate: $approvalRate%")
             appendLine()
             appendLine("PLAN STATISTICS")
             appendLine("Total Plans: $totalPlans")
