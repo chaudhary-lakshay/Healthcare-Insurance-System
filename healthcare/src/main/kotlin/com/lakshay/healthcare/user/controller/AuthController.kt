@@ -5,7 +5,9 @@ import com.lakshay.healthcare.user.dto.LoginResponse
 import com.lakshay.healthcare.user.service.UserMgmtService
 import com.lakshay.healthcare.user.service.WorkerMgmtService
 import com.lakshay.healthcare.shared.entity.AdminMaster
+import com.lakshay.healthcare.shared.exception.AccountLockedException
 import com.lakshay.healthcare.shared.exception.UnauthorizedException
+import com.lakshay.healthcare.shared.security.LoginAttemptService
 import com.lakshay.healthcare.shared.repository.AdminMasterRepository
 import com.lakshay.healthcare.shared.repository.UserMasterRepository
 import com.lakshay.healthcare.shared.repository.WorkerMasterRepository
@@ -24,11 +26,16 @@ class AuthController(
     private val userService: UserMgmtService,
     private val workerService: WorkerMgmtService,
     private val jwtUtil: JwtUtil,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
+    private val loginAttemptService: LoginAttemptService
 ) {
 
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<Map<String, Any>> {
+        // must stay outside the try — the catch below eats everything into a 500
+        if (loginAttemptService.isLocked(request.email)) {
+            throw AccountLockedException(loginAttemptService.lockoutSeconds())
+        }
         return try {
             var name = ""
             var userType = "USER"
@@ -36,6 +43,7 @@ class AuthController(
             val admin = adminRepository.findByEmail(request.email)
             if (admin != null) {
                 if (!passwordEncoder.matches(request.password, admin.password)) {
+                    loginAttemptService.recordFailure(request.email)
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(mapOf("error" to "Invalid email or password"))
                 }
@@ -45,6 +53,7 @@ class AuthController(
                 val worker = workerRepository.findByEmail(request.email)
                 if (worker != null) {
                     if (!passwordEncoder.matches(request.password, worker.password)) {
+                        loginAttemptService.recordFailure(request.email)
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                             .body(mapOf("error" to "Invalid email or password"))
                     }
@@ -57,10 +66,12 @@ class AuthController(
                 } else {
                     val user = userRepository.findByEmail(request.email)
                     if (user == null) {
+                        loginAttemptService.recordFailure(request.email)
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                             .body(mapOf("error" to "Invalid email or password"))
                     }
                     if (!passwordEncoder.matches(request.password, user.password)) {
+                        loginAttemptService.recordFailure(request.email)
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                             .body(mapOf("error" to "Invalid email or password"))
                     }
@@ -73,6 +84,7 @@ class AuthController(
                 }
             }
 
+            loginAttemptService.recordSuccess(request.email)
             val token = jwtUtil.generateToken(request.email, "ROLE_$userType")
 
             ResponseEntity.ok(

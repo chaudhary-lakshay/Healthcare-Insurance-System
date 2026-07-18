@@ -2,6 +2,9 @@
 
 import com.lakshay.healthcare.shared.security.AuthEntryPoint
 import com.lakshay.healthcare.shared.security.JwtAuthFilter
+import com.lakshay.healthcare.shared.security.RateLimitFilter
+import org.springframework.beans.factory.annotation.Value
+import java.time.Duration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -17,7 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 class SecurityConfig(
     private val jwtAuthFilter: JwtAuthFilter,
-    private val authEntryPoint: AuthEntryPoint
+    private val authEntryPoint: AuthEntryPoint,
+    @Value("\${app.auth-throttle.ip-limit:10}") private val ipLimit: Long,
+    @Value("\${app.auth-throttle.ip-window-minutes:15}") private val ipWindowMinutes: Long
 ) {
 
     @Bean
@@ -57,6 +62,8 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
+            // brute-force throttle sits in front of everything else on the auth endpoints
+            .addFilterBefore(RateLimitFilter(ipLimit, Duration.ofMinutes(ipWindowMinutes)), JwtAuthFilter::class.java)
 
         return http.build()
     }

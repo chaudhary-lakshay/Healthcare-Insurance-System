@@ -42,6 +42,19 @@ class GlobalExceptionHandler {
     fun handleValidation(ex: ValidationException): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.BAD_REQUEST, ex.message ?: "Bad request")
 
+    @ExceptionHandler(AccountLockedException::class)
+    fun handleAccountLocked(ex: AccountLockedException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", ex.retryAfterSeconds.toString())
+            .body(
+                ErrorResponse(
+                    status = HttpStatus.TOO_MANY_REQUESTS.value(),
+                    error = HttpStatus.TOO_MANY_REQUESTS.reasonPhrase,
+                    message = ex.message ?: "Too many failed attempts",
+                    timestamp = LocalDateTime.now().toString()
+                )
+            )
+
     @ExceptionHandler(MaxUploadSizeExceededException::class)
     fun handleUploadTooLarge(ex: MaxUploadSizeExceededException): ResponseEntity<ErrorResponse> =
         errorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File too large")

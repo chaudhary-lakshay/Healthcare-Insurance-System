@@ -48,6 +48,11 @@ jwt:
   audience: ish-services
 
 app:
+  auth-throttle:
+    ip-limit: 10           # POSTs per window per IP across the auth endpoints
+    ip-window-minutes: 15
+    max-failures: 5        # bad logins per email before temp lockout
+    lockout-minutes: 15
   cors:
     # Allowed origins, comma-separated. "*" = all (dev only) — lock down in prod
     # via APP_CORS_ALLOWED_ORIGINS=https://app.example.com,https://admin.example.com

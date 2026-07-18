@@ -11,3 +11,8 @@ class UnauthorizedException(message: String) : RuntimeException(message)
 class ValidationException(message: String) : RuntimeException(message)
 
 class ForbiddenException(message: String) : RuntimeException(message)
+
+class AccountLockedException(
+    val retryAfterSeconds: Long,
+    message: String = "Too many failed attempts. Try again later."
+) : RuntimeException(message)
