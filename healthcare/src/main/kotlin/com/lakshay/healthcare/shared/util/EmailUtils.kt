@@ -13,6 +13,8 @@ class EmailUtils(
 
     private val logger = LoggerFactory.getLogger(EmailUtils::class.java)
 
+    // TooGenericExceptionCaught: any send failure -> false, caller decides. Never throws.
+    @Suppress("TooGenericExceptionCaught")
     fun sendEmail(subject: String, body: String, to: String): Boolean {
         return try {
             val mimeMessage: MimeMessage = mailSender.createMimeMessage()
@@ -29,6 +31,8 @@ class EmailUtils(
         }
     }
 
+    // TooGenericExceptionCaught: any send failure -> false, caller decides. Never throws.
+    @Suppress("TooGenericExceptionCaught")
     fun sendEmailWithAttachment(
         subject: String,
         body: String,

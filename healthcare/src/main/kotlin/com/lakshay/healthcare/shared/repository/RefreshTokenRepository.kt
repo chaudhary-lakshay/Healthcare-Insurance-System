@@ -14,7 +14,10 @@ interface RefreshTokenRepository : JpaRepository<RefreshToken, Long> {
     // atomic claim — rowcount 0 means the token was already spent/revoked/missing,
     // so two concurrent refreshes can't both win
     @Modifying(clearAutomatically = true)
-    @Query("update RefreshToken t set t.usedSw = 'Y' where t.tokenHash = :hash and t.usedSw = 'N' and t.revokedSw = 'N'")
+    @Query(
+        "update RefreshToken t set t.usedSw = 'Y' " +
+            "where t.tokenHash = :hash and t.usedSw = 'N' and t.revokedSw = 'N'"
+    )
     fun claim(@Param("hash") hash: String): Int
 
     @Modifying(clearAutomatically = true)

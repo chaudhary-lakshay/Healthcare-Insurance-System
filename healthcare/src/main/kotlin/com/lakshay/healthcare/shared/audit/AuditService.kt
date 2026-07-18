@@ -14,6 +14,8 @@ class AuditService(private val auditRepository: AuditEventRepository) {
 
     private val log = LoggerFactory.getLogger(AuditService::class.java)
 
+    // TooGenericExceptionCaught: audit writes must never break the caller — log and swallow.
+    @Suppress("TooGenericExceptionCaught")
     fun record(action: String, entityType: String? = null, entityId: String? = null, detail: String? = null) {
         try {
             val auth = SecurityContextHolder.getContext().authentication

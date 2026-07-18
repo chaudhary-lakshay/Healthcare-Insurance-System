@@ -46,6 +46,9 @@ class RefreshTokenService(
 
     // noRollbackFor: the 401 must NOT undo the family revocation written in this
     // same tx — otherwise reuse detection rolls itself back
+    // ThrowsCount: distinct 401 reasons (unknown / expired / already-used reuse detection),
+    // each with its own message — reuse detection especially must stay explicit.
+    @Suppress("ThrowsCount")
     @Transactional(noRollbackFor = [UnauthorizedException::class])
     fun rotate(rawToken: String): RotatedToken {
         val hash = sha256(rawToken)
