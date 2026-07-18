@@ -14,6 +14,8 @@ class BenefitController(
 ) {
 
     @GetMapping("/send")
+    // broad catch on purpose — any batch-launch failure becomes a clean 500 in BenefitResponse shape
+    @Suppress("TooGenericExceptionCaught")
     fun sendBenefits(): ResponseEntity<BenefitResponse> {
         return try {
             val execution = benefitLaunchService.launchBenefitIssuance()

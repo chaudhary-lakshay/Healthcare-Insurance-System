@@ -52,11 +52,15 @@ class BatchConfig {
         lineAggregator.setDelimiter(",")
         // mask at extraction — SSN never leaves the app in full
         lineAggregator.setFieldExtractor { e ->
-            arrayOf(e.caseNo, e.holderName, maskSsnLast4(e.holderSSN), e.planName, e.benefitAmt, e.bankName, e.accountNumber)
+            arrayOf(
+                e.caseNo, e.holderName, maskSsnLast4(e.holderSSN),
+                e.planName, e.benefitAmt, e.bankName, e.accountNumber
+            )
         }
 
         writer.setLineAggregator(lineAggregator)
-        writer.setHeaderCallback { it.write("Case No,Holder Name,SSN,Plan Name,Benefit Amount,Bank Name,Account Number") }
+        val csvHeader = "Case No,Holder Name,SSN,Plan Name,Benefit Amount,Bank Name,Account Number"
+        writer.setHeaderCallback { it.write(csvHeader) }
         writer.afterPropertiesSet()
         return writer
     }
