@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service
 import java.time.LocalDate
 
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class DataCollectionService(
     private val dcCaseRepository: DcCaseRepository,
     private val dcIncomeRepository: DcIncomeRepository,
@@ -96,6 +98,9 @@ class DataCollectionService(
         }
     }
 
+    // ThrowsCount: three distinct client errors (case-not-found 404, two 400 validations);
+    // folding them would blur the messages/types or reorder the dob parse. Keep them explicit.
+    @Suppress("ThrowsCount")
     fun saveHouseholdMember(request: HouseholdMemberRequest): Long {
         dcCaseRepository.findByCaseNo(request.caseNo)
             ?: throw ResourceNotFoundException("Case not found: ${request.caseNo}")
@@ -111,7 +116,10 @@ class DataCollectionService(
                 memberIncome = request.memberIncome
             )
         )
-        auditService.record("HOUSEHOLD_MEMBER_ADDED", "HouseholdMember", saved.memberId.toString(), "relationship=${request.relationship}")
+        auditService.record(
+            "HOUSEHOLD_MEMBER_ADDED", "HouseholdMember", saved.memberId.toString(),
+            "relationship=${request.relationship}"
+        )
         return saved.memberId
     }
 
@@ -141,7 +149,10 @@ class DataCollectionService(
                 ChildrenRequest(caseNo = it.caseNo, childDOB = it.childDOB?.toString(), childSSN = it.childSSN)
             },
             householdMembers = householdMembers.map {
-                HouseholdMemberResponse(it.memberId, it.caseNo, it.fullName, it.relationship, it.dob?.toString(), it.memberIncome)
+                HouseholdMemberResponse(
+                    it.memberId, it.caseNo, it.fullName,
+                    it.relationship, it.dob?.toString(), it.memberIncome
+                )
             },
             householdSize = 1 + householdMembers.size
         )
