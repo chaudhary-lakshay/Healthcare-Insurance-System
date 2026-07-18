@@ -36,6 +36,10 @@ class UserMgmtService(
     private val refreshTokenService: RefreshTokenService
 ) {
 
+    companion object {
+        private const val PASSWORD_LENGTH = 6
+    }
+
     fun registerUser(request: RegisterRequest): RegistrationResult = register(request, "USER")
 
     fun registerCitizen(request: RegisterRequest): RegistrationResult = register(request, "CITIZEN")
@@ -45,7 +49,7 @@ class UserMgmtService(
             throw DuplicateResourceException("User with email ${request.email} already exists")
         }
 
-        val tempPwd = generateRandomPassword(6)
+        val tempPwd = generateRandomPassword(PASSWORD_LENGTH)
 
         val user = UserMaster(
             name = request.name,
