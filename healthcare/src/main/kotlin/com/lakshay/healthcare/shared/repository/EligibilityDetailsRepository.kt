@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface EligibilityDetailsRepository : JpaRepository<com.lakshay.healthcare.shared.entity.EligibilityDetails, Long> {
     fun findByCaseNo(caseNo: Long): com.lakshay.healthcare.shared.entity.EligibilityDetails?
+    fun findByPlanStatusAndPlanEndDate(planStatus: String, planEndDate: java.time.LocalDate): List<com.lakshay.healthcare.shared.entity.EligibilityDetails>
     fun findAllByPlanStatus(planStatus: String): List<com.lakshay.healthcare.shared.entity.EligibilityDetails>
     fun findByPlanStatus(planStatus: String, pageable: Pageable): Page<com.lakshay.healthcare.shared.entity.EligibilityDetails>
 }
