@@ -18,6 +18,7 @@ import com.lakshay.healthcare.shared.exception.ResourceNotFoundException
 import com.lakshay.healthcare.shared.exception.ValidationException
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import com.lakshay.healthcare.shared.notification.NotificationService
+import com.lakshay.healthcare.shared.notification.StatusEmailService
 import com.lakshay.healthcare.shared.repository.CaseAssignmentRepository
 import com.lakshay.healthcare.shared.repository.CaseNoteRepository
 import com.lakshay.healthcare.shared.repository.CitizenAppRegistrationRepository
@@ -39,7 +40,8 @@ class CaseworkService(
     private val workerRepository: WorkerMasterRepository,
     private val notificationService: NotificationService,
     private val documentRepository: DocumentRepository,
-    private val auditService: AuditService
+    private val auditService: AuditService,
+    private val statusEmailService: StatusEmailService
 ) {
 
     private val ssnPattern = Regex("""\d{3}-?\d{2}-?\d{4}""")
@@ -52,8 +54,9 @@ class CaseworkService(
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
         if (request.message.isBlank()) throw ValidationException("message is required")
         if (ssnPattern.containsMatchIn(request.message)) throw ValidationException("message must not contain an SSN")
-        val citizenEmail = citizenRepository.findByAppId(case.appId)?.email
+        val citizen = citizenRepository.findByAppId(case.appId)
             ?: throw ResourceNotFoundException("No citizen on file for case: $caseNo")
+        val citizenEmail = citizen.email
         val author = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
         val notice = notificationService.notifyPortal(
             caseNo = caseNo, recipient = citizenEmail, noticeType = "RFI",
@@ -61,6 +64,7 @@ class CaseworkService(
         )
         caseNoteRepository.save(CaseNote(caseNo = caseNo, author = author, body = "RFI: ${request.message}"))
         auditService.record("RFI_SENT", "DcCase", caseNo.toString())
+        statusEmailService.rfiOpened(caseNo, citizenEmail, citizen.fullName, request.message)
         return RfiResponse(caseNo = caseNo, notificationSent = notice != null)
     }
 

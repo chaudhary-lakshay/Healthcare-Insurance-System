@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body style="font-family: Arial, sans-serif; color: #222222;">
+<p>Hello <span th:text="${citizenName}">citizen</span>,</p>
+
+<div th:if="${status == 'APPROVED'}">
+    <p>Good news — your application for <strong th:text="${planName}">plan</strong>
+        (case #<span th:text="${caseNo}">0</span>) has been <strong>approved</strong>.</p>
+    <p th:if="${benefitAmt != null}">Benefit amount: $<span th:text="${benefitAmt}">0</span>.</p>
+</div>
+
+<div th:if="${status == 'DENIED'}">
+    <p>Your application for <strong th:text="${planName}">plan</strong>
+        (case #<span th:text="${caseNo}">0</span>) has been <strong>denied</strong>.</p>
+    <p th:if="${denialReason != null}">Reason: <span th:text="${denialReason}">reason</span>.</p>
+    <p>Contact your help center for details or to appeal the decision.</p>
+</div>
+
+<div th:if="${status == 'RFI'}">
+    <p>A caseworker needs more information on your case #<span th:text="${caseNo}">0</span>:</p>
+    <blockquote style="border-left: 3px solid #cccccc; margin: 8px 0; padding: 4px 12px;"
+                th:text="${message}">message</blockquote>
+    <p>Please log in to your portal to respond.</p>
+</div>
+
+<p>— Insurance System for Health</p>
+</body>
+</html>
