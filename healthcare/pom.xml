@@ -256,6 +256,19 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            <plugin>
+                <groupId>com.github.ozsie</groupId>
+                <artifactId>detekt-maven-plugin</artifactId>
+                <version>1.23.7</version>
+                <configuration>
+                    <!-- strict: run detekt's default rule set, no baseline yet -->
+                    <report>
+                        <report>xml:${project.basedir}/target/detekt/detekt.xml</report>
+                        <report>html:${project.basedir}/target/detekt/detekt.html</report>
+                        <report>txt:${project.basedir}/target/detekt/detekt.txt</report>
+                    </report>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
