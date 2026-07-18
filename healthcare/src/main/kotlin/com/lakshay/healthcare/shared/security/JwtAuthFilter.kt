@@ -41,6 +41,9 @@ class JwtAuthFilter(
     // Valid token -> set auth. Anything thrown (malformed/expired) is swallowed so the request
     // falls through unauthenticated and the authz layer 401s it. Never a 500 — JJWT errors aren't
     // AuthenticationExceptions.
+    // Broad catch on purpose: any bad/expired/malformed token just leaves the request
+    // unauthenticated for the authz layer to 401. JJWT errors aren't AuthenticationExceptions.
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
     private fun authenticate(token: String) {
         try {
             val email = jwtUtil.extractEmail(token)
