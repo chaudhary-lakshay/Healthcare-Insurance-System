@@ -36,6 +36,8 @@ class SecurityConfig(
                 auth
                     .requestMatchers(
                         "/api/auth/login",
+                        "/api/auth/refresh",
+                        "/api/auth/logout",
                         "/user-api/save",
                         "/user-api/activate",
                         "/user-api/login",

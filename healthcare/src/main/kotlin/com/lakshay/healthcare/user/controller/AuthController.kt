@@ -1,6 +1,7 @@
 ﻿package com.lakshay.healthcare.user.controller
 
 import com.lakshay.healthcare.user.dto.LoginRequest
+import com.lakshay.healthcare.user.dto.RefreshRequest
 import com.lakshay.healthcare.user.dto.LoginResponse
 import com.lakshay.healthcare.user.service.UserMgmtService
 import com.lakshay.healthcare.user.service.WorkerMgmtService
@@ -8,6 +9,7 @@ import com.lakshay.healthcare.shared.entity.AdminMaster
 import com.lakshay.healthcare.shared.exception.AccountLockedException
 import com.lakshay.healthcare.shared.exception.UnauthorizedException
 import com.lakshay.healthcare.shared.security.LoginAttemptService
+import com.lakshay.healthcare.shared.security.RefreshTokenService
 import com.lakshay.healthcare.shared.repository.AdminMasterRepository
 import com.lakshay.healthcare.shared.repository.UserMasterRepository
 import com.lakshay.healthcare.shared.repository.WorkerMasterRepository
@@ -27,7 +29,8 @@ class AuthController(
     private val workerService: WorkerMgmtService,
     private val jwtUtil: JwtUtil,
     private val passwordEncoder: PasswordEncoder,
-    private val loginAttemptService: LoginAttemptService
+    private val loginAttemptService: LoginAttemptService,
+    private val refreshTokenService: RefreshTokenService
 ) {
 
     @PostMapping("/login")
@@ -86,10 +89,12 @@ class AuthController(
 
             loginAttemptService.recordSuccess(request.email)
             val token = jwtUtil.generateToken(request.email, "ROLE_$userType")
+            val refreshToken = refreshTokenService.issue(request.email, userType)
 
             ResponseEntity.ok(
                 mapOf(
                     "token" to token,
+                    "refreshToken" to refreshToken,
                     "tokenType" to "Bearer",
                     "email" to request.email,
                     "name" to name,
@@ -101,5 +106,25 @@ class AuthController(
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "An error occurred during authentication"))
         }
+    }
+
+    @PostMapping("/refresh")
+    fun refresh(@RequestBody request: RefreshRequest): ResponseEntity<Map<String, Any>> {
+        val rotated = refreshTokenService.rotate(request.refreshToken)
+        val access = jwtUtil.generateToken(rotated.email, "ROLE_${rotated.role}")
+        return ResponseEntity.ok(
+            mapOf(
+                "token" to access,
+                "refreshToken" to rotated.raw,
+                "tokenType" to "Bearer"
+            )
+        )
+    }
+
+    @PostMapping("/logout")
+    fun logout(@RequestBody request: RefreshRequest): ResponseEntity<Map<String, String>> {
+        refreshTokenService.revoke(request.refreshToken)
+        // always 200 — don't confirm whether the token was live
+        return ResponseEntity.ok(mapOf("message" to "Logged out"))
     }
 }
