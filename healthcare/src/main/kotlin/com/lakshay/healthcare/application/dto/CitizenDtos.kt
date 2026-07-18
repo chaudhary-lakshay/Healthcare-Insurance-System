@@ -13,3 +13,13 @@ data class CitizenRegistrationResponse(
     val appId: Long,
     val stateName: String
 )
+
+data class TimelineEntry(
+    val status: String,
+    val at: String
+)
+
+data class CaseTimelineResponse(
+    val caseNo: Long,
+    val timeline: List<TimelineEntry>
+)

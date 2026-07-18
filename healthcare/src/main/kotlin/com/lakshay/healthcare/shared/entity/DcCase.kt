@@ -2,7 +2,10 @@
 
 import com.lakshay.healthcare.shared.lifecycle.CaseStatus
 import jakarta.persistence.*
+import org.hibernate.envers.Audited
 
+// Audited: every save lands a row in DC_CASES_AUD — that's the citizen's status timeline.
+@Audited
 @Entity
 @Table(name = "DC_CASES")
 data class DcCase(
