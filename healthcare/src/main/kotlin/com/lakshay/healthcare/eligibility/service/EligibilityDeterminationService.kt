@@ -29,6 +29,8 @@ import java.time.LocalDate
 import java.time.Period
 
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class EligibilityDeterminationService(
     private val dcCaseRepository: DcCaseRepository,
     private val dcIncomeRepository: DcIncomeRepository,
@@ -56,6 +58,10 @@ class EligibilityDeterminationService(
         private const val FALLBACK_INCOME_LIMIT = 10000
     }
 
+    // LongMethod/CyclomaticComplexMethod: load -> compute -> persist -> notify, reads top-to-bottom.
+    // ThrowsCount: four dependent lookups (case, plan id, plan, income), each guards the next.
+    // Covered end-to-end by EligibilityMatrixIT.
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ThrowsCount")
     fun determineEligibility(caseNo: Long): EligibilityResponse {
         val dcCase = dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
@@ -116,7 +122,8 @@ class EligibilityDeterminationService(
         dcCaseRepository.save(caseStateMachine.transition(dcCase, CaseStatus.DETERMINED))
         auditService.record(
             "CASE_DETERMINED", "DcCase", caseNo.toString(),
-            "planStatus=${output.planStatus}; applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
+            "planStatus=${output.planStatus}; " +
+                "applicantIncome=${income.empIncome ?: 0.0}; householdIncome=$householdIncome"
         )
 
         // only on an actual status flip — re-runs are idempotent and shouldn't spam
@@ -159,6 +166,10 @@ class EligibilityDeterminationService(
         return ScreeningResponse(caseNo, programs)
     }
 
+    // LongMethod/CyclomaticComplexMethod: this IS the benefit decision table — one branch per
+    // program (SNAP/CCAP/MEDCARE/MEDAID/CAJW/QHP/fallback). Splitting it scatters the rules.
+    // LongParameterList: the six inputs are the determination context, passed straight through.
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
     private fun applyPlanConditions(
         planName: String,
         income: DcIncome,
@@ -199,7 +210,8 @@ class EligibilityDeterminationService(
                 val allKidsUnderLimit = children.all { child ->
                     child.childDOB?.let { Period.between(it, LocalDate.now()).years <= CCAP_MAX_CHILD_AGE } ?: true
                 }
-                if (empIncome < (rule?.incomeLimit ?: CCAP_DEFAULT_INCOME_LIMIT) && hasEligibleKids && allKidsUnderLimit) {
+                val incomeUnderLimit = empIncome < (rule?.incomeLimit ?: CCAP_DEFAULT_INCOME_LIMIT)
+                if (incomeUnderLimit && hasEligibleKids && allKidsUnderLimit) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
