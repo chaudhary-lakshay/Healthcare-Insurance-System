@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
+// LongParameterList: Spring constructor injection — each dependency is a distinct bean
+@Suppress("LongParameterList")
 class CaseworkService(
     private val caseNoteRepository: CaseNoteRepository,
     private val dcCaseRepository: DcCaseRepository,
@@ -49,6 +51,9 @@ class CaseworkService(
     // Worker requests info from the citizen. The recipient is derived from the case (never a request
     // param), the message is rejected if it contains an SSN, and notificationSent reports whether the
     // portal notice actually went out (notifyPortal swallows its own failures).
+    // ThrowsCount: four distinct client errors (case 404, blank-msg 400, SSN 400, citizen 404).
+    // Each has its own type/message; folding would blur them.
+    @Suppress("ThrowsCount")
     fun requestInfo(caseNo: Long, request: RfiRequest): RfiResponse {
         val case = dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
@@ -70,19 +75,27 @@ class CaseworkService(
 
     fun listDocuments(caseNo: Long): List<DocumentSummaryResponse> =
         documentRepository.findByCaseNo(caseNo).map {
-            DocumentSummaryResponse(it.docId, it.docType, it.fileName, it.contentType, it.status, it.createdAt.toString())
+            DocumentSummaryResponse(
+                it.docId, it.docType, it.fileName,
+                it.contentType, it.status, it.createdAt.toString()
+            )
         }
 
     @Transactional
     fun reviewDocument(docId: Long, request: DocumentReviewRequest): DocumentReviewResponse {
         val decision = request.decision.uppercase()
-        if (decision !in setOf("REVIEWED", "REJECTED")) throw ValidationException("decision must be REVIEWED or REJECTED")
+        if (decision !in setOf("REVIEWED", "REJECTED")) {
+            throw ValidationException("decision must be REVIEWED or REJECTED")
+        }
         if (!documentRepository.existsById(docId)) throw ResourceNotFoundException("Document not found: $docId")
         documentRepository.updateStatus(docId, decision)
         auditService.record("DOCUMENT_REVIEWED", "Document", docId.toString(), "decision=$decision")
         return DocumentReviewResponse(docId, decision)
     }
 
+    // ThrowsCount + SwallowedException: 404 + validation guards, plus a deliberate translation of
+    // DataIntegrityViolationException to DuplicateResourceException (which carries no cause slot).
+    @Suppress("ThrowsCount", "SwallowedException")
     fun assign(caseNo: Long, request: AssignmentRequest): AssignmentResponse {
         dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
@@ -92,7 +105,9 @@ class CaseworkService(
         }
         val assignedBy = SecurityContextHolder.getContext().authentication?.name ?: "SYSTEM"
         val existing = caseAssignmentRepository.findByCaseNo(caseNo)
-        val toSave = existing?.copy(assignedTo = request.assignedTo, assignedBy = assignedBy, assignedAt = LocalDateTime.now())
+        val toSave = existing?.copy(
+            assignedTo = request.assignedTo, assignedBy = assignedBy, assignedAt = LocalDateTime.now()
+        )
             ?: CaseAssignment(caseNo = caseNo, assignedTo = request.assignedTo, assignedBy = assignedBy)
         val saved = try {
             caseAssignmentRepository.save(toSave)
