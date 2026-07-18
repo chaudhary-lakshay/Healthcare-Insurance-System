@@ -23,6 +23,11 @@ class GovernmentReportService(
     private val planRepository: PlanRepository
 ) {
 
+    companion object {
+        private const val SEPARATOR_LENGTH = 50
+        private const val PERCENTAGE_MULTIPLIER = 100
+    }
+
     fun generateReport(request: ReportRequest): ReportResponse {
         val totalApplications = citizenRepository.count()
         val approvedCount = eligibilityRepository.findAllByPlanStatus("APPROVED").size
@@ -109,13 +114,13 @@ class GovernmentReportService(
             appendLine("Type: ${request.reportType}")
             appendLine("Period: ${request.periodCovered ?: "Current"}")
             appendLine("Generated: ${LocalDate.now()}")
-            appendLine("=" .repeat(50))
+            appendLine("=" .repeat(SEPARATOR_LENGTH))
             appendLine()
             appendLine("APPLICATION STATISTICS")
             appendLine("Total Applications: $totalApplications")
             appendLine("Approved: $approvedCount")
             appendLine("Denied: $deniedCount")
-            appendLine("Approval Rate: ${if (totalApplications > 0) "%.1f".format(approvedCount.toDouble() / totalApplications * 100) else "0"}%")
+            appendLine("Approval Rate: ${if (totalApplications > 0) "%.1f".format(approvedCount.toDouble() / totalApplications * PERCENTAGE_MULTIPLIER) else "0"}%")
             appendLine()
             appendLine("PLAN STATISTICS")
             appendLine("Total Plans: $totalPlans")
@@ -123,7 +128,7 @@ class GovernmentReportService(
             appendLine("BENEFIT STATISTICS")
             appendLine("Total Eligible Citizens: $approvedCount")
             appendLine("Total Denied: $deniedCount")
-            appendLine("=" .repeat(50))
+            appendLine("=" .repeat(SEPARATOR_LENGTH))
             appendLine("End of Report")
         }
     }

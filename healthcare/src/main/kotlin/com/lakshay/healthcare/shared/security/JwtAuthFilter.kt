@@ -22,6 +22,10 @@ class JwtAuthFilter(
     private val jwtUtil: JwtUtil
 ) : OncePerRequestFilter() {
 
+    companion object {
+        private const val BEARER_PREFIX_LENGTH = 7
+    }
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -29,7 +33,7 @@ class JwtAuthFilter(
     ) {
         val authHeader = request.getHeader("Authorization")
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            authenticate(authHeader.substring(7))
+            authenticate(authHeader.substring(BEARER_PREFIX_LENGTH))
         }
         filterChain.doFilter(request, response)
     }

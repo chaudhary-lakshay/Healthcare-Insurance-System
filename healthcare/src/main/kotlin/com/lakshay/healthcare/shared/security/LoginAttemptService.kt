@@ -15,6 +15,12 @@ class LoginAttemptService(
     @Value("\${app.auth-throttle.max-failures:5}") private val maxFailures: Int,
     @Value("\${app.auth-throttle.lockout-minutes:15}") private val lockoutMinutes: Long
 ) {
+
+    companion object {
+        private const val CACHE_MAX_SIZE = 100_000L
+        private const val SECONDS_PER_MINUTE = 60
+    }
+
     private val log = LoggerFactory.getLogger(LoginAttemptService::class.java)
 
     private class Attempts {
@@ -25,11 +31,11 @@ class LoginAttemptService(
 
     private val attempts = Caffeine.newBuilder()
         .expireAfterWrite(Duration.ofMinutes(lockoutMinutes))
-        .maximumSize(100_000)
+        .maximumSize(CACHE_MAX_SIZE)
         .build<String, Attempts>()
 
     // static value, not remaining time — don't leak lock age per account
-    fun lockoutSeconds(): Long = lockoutMinutes * 60
+    fun lockoutSeconds(): Long = lockoutMinutes * SECONDS_PER_MINUTE
 
     fun isLocked(email: String): Boolean {
         val until = attempts.getIfPresent(key(email))?.lockedUntil ?: return false

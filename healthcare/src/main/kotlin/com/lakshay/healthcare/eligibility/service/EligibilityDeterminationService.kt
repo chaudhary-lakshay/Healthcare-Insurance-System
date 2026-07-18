@@ -46,6 +46,16 @@ class EligibilityDeterminationService(
     private val statusEmailService: StatusEmailService
 ) {
 
+    companion object {
+        private const val SNAP_DEFAULT_INCOME_LIMIT = 300.0
+        private const val CCAP_MAX_CHILD_AGE = 16
+        private const val CCAP_DEFAULT_INCOME_LIMIT = 300.0
+        private const val MEDCARE_MIN_AGE = 65
+        private const val MEDAID_DEFAULT_INCOME_LIMIT = 300.0
+        private const val QHP_MIN_AGE = 25
+        private const val FALLBACK_INCOME_LIMIT = 10000
+    }
+
     fun determineEligibility(caseNo: Long): EligibilityResponse {
         val dcCase = dcCaseRepository.findByCaseNo(caseNo)
             ?: throw ResourceNotFoundException("Case not found: $caseNo")
@@ -166,7 +176,7 @@ class EligibilityDeterminationService(
 
         return when (planName.uppercase()) {
             "SNAP" -> {
-                if (empIncome < (rule?.incomeLimit ?: 300.0)) {
+                if (empIncome < (rule?.incomeLimit ?: SNAP_DEFAULT_INCOME_LIMIT)) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -187,9 +197,9 @@ class EligibilityDeterminationService(
             "CCAP" -> {
                 val hasEligibleKids = children.isNotEmpty()
                 val allKidsUnderLimit = children.all { child ->
-                    child.childDOB?.let { Period.between(it, LocalDate.now()).years <= 16 } ?: true
+                    child.childDOB?.let { Period.between(it, LocalDate.now()).years <= CCAP_MAX_CHILD_AGE } ?: true
                 }
-                if (empIncome < (rule?.incomeLimit ?: 300.0) && hasEligibleKids && allKidsUnderLimit) {
+                if (empIncome < (rule?.incomeLimit ?: CCAP_DEFAULT_INCOME_LIMIT) && hasEligibleKids && allKidsUnderLimit) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -208,7 +218,7 @@ class EligibilityDeterminationService(
                 }
             }
             "MEDCARE" -> {
-                if (citizenAge >= 65) {
+                if (citizenAge >= MEDCARE_MIN_AGE) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -227,7 +237,7 @@ class EligibilityDeterminationService(
                 }
             }
             "MEDAID" -> {
-                if (empIncome < (rule?.incomeLimit ?: 300.0) && propertyIncome == 0.0) {
+                if (empIncome < (rule?.incomeLimit ?: MEDAID_DEFAULT_INCOME_LIMIT) && propertyIncome == 0.0) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -266,7 +276,7 @@ class EligibilityDeterminationService(
                 }
             }
             "QHP" -> {
-                if (citizenAge >= 25) {
+                if (citizenAge >= QHP_MIN_AGE) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,
@@ -286,7 +296,7 @@ class EligibilityDeterminationService(
             }
             else -> {
                 val totalIncome = empIncome + propertyIncome
-                if (totalIncome < 10000) {
+                if (totalIncome < FALLBACK_INCOME_LIMIT) {
                     EligibilityResponse(
                         planStatus = "APPROVED",
                         planName = planName,

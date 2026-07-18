@@ -8,6 +8,10 @@ import org.springframework.stereotype.Component
 @Component
 class BenefitItemProcessor : ItemProcessor<com.lakshay.healthcare.shared.entity.EligibilityDetails, com.lakshay.healthcare.shared.entity.EligibilityDetails> {
 
+    companion object {
+        private const val ACCOUNT_NUMBER_MODULUS = 100000
+    }
+
     private val logger = LoggerFactory.getLogger(BenefitItemProcessor::class.java)
 
     override fun process(item: com.lakshay.healthcare.shared.entity.EligibilityDetails): com.lakshay.healthcare.shared.entity.EligibilityDetails {
@@ -20,6 +24,6 @@ class BenefitItemProcessor : ItemProcessor<com.lakshay.healthcare.shared.entity.
     }
 
     private fun generateAccountNumber(caseNo: Long): String {
-        return "ISH${caseNo}${System.currentTimeMillis() % 100000}"
+        return "ISH${caseNo}${System.currentTimeMillis() % ACCOUNT_NUMBER_MODULUS}"
     }
 }
