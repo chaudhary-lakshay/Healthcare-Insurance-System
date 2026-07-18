@@ -42,6 +42,9 @@ class CorrespondenceService(
 
     private val logger = LoggerFactory.getLogger(CorrespondenceService::class.java)
 
+    // TooGenericExceptionCaught: per-trigger resilience — one bad trigger is logged, marked FAILED,
+    // and the loop continues. The broad catch is the point.
+    @Suppress("TooGenericExceptionCaught")
     fun processTriggers(): List<TriggerResponse> {
         val pendingTriggers = coTriggerRepository.findByTriggerStatus("PENDING")
         val responses = mutableListOf<TriggerResponse>()
@@ -70,17 +73,19 @@ class CorrespondenceService(
         logger.info("Processing trigger for case number: {}", trigger.caseNo)
 
         val eligibility = eligibilityRepository.findByCaseNo(trigger.caseNo)
-            ?: throw IllegalStateException("No eligibility details found for case ${trigger.caseNo}")
+            ?: error("No eligibility details found for case ${trigger.caseNo}")
 
         val dcCase = dcCaseRepository.findByCaseNo(trigger.caseNo)
-            ?: throw IllegalStateException("No case found for case number ${trigger.caseNo}")
+            ?: error("No case found for case number ${trigger.caseNo}")
 
         val citizen = citizenRepository.findByAppId(dcCase.appId)
-            ?: throw IllegalStateException("No citizen found for appId ${dcCase.appId}")
+            ?: error("No citizen found for appId ${dcCase.appId}")
 
         val pdfBytes = generateBenefitPdf(eligibility)
 
-        val body = "Hello ${citizen.fullName},<br><br>This email contains complete details about your plan approval or denial.<br><br>Please see the attached PDF for details."
+        val body = "Hello ${citizen.fullName},<br><br>" +
+            "This email contains complete details about your plan approval or denial.<br><br>" +
+            "Please see the attached PDF for details."
         val emailSent = emailUtils.sendEmailWithAttachment(
             subject = "Plan Approval/Denial Notification - Case #${trigger.caseNo}",
             body = body,
@@ -89,7 +94,7 @@ class CorrespondenceService(
             attachmentData = pdfBytes
         )
         if (!emailSent) {
-            throw IllegalStateException("Email delivery failed for case ${trigger.caseNo}")
+            error("Email delivery failed for case ${trigger.caseNo}")
         }
 
         val updatedTrigger = trigger.copy(
